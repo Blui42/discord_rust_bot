@@ -118,13 +118,17 @@ pub async fn delete(ctx: Context, msg: Message) -> Result<(), String>{
     
     let amount: u64 = msg.content.parse().unwrap_or(0);
     if amount == 0{
-        msg.channel_id.say(&ctx.http, "Please specify a valid amount of messages to delete (1-100)").await.map_err(stringify_error)?;
+        let error_msg = msg.channel_id.say(&ctx.http, "Please specify a valid amount of messages to delete (1-100)").await.map_err(stringify_error)?;
+        sleep(Duration::from_secs(3)).await;
+        error_msg.delete(&ctx.http).await.map_err(stringify_error)?;
         return Ok(());
     }
     let guild_channel = msg.channel(&ctx.cache).await.ok_or("Unknown Cache Error")?.guild().ok_or("Unknown Cache Error")?;
     let messages = guild_channel.messages(&ctx.http,   |retriever|{retriever.limit(amount+1)}  ).await.map_err(stringify_error)?;
     if let Err(_) = guild_channel.delete_messages(&ctx.http, messages).await{
-        msg.channel_id.say(&ctx.http, "Please specify a valid amount of messages to delete (1-100)").await.map_err(stringify_error)?;
+        let error_msg = msg.channel_id.say(&ctx.http, "Please specify a valid amount of messages to delete (1-100)").await.map_err(stringify_error)?;
+        sleep(Duration::from_secs(3)).await;
+        error_msg.delete(&ctx.http).await.map_err(stringify_error)?;
     }
     return Ok(())
 }
