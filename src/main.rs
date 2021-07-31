@@ -68,6 +68,7 @@ impl EventHandler for Handler {
             }
         };
 
+        // gives xp and cookies to user
         reward_user(&msg, &mut ctx).await;
 
         if ! msg.content.starts_with(&prefix) {
@@ -148,8 +149,10 @@ async fn main(){
         shard_manager.lock().await.shutdown_all().await;
         println!("Successfully Shut Down");
     });
+
+    // automatically save every 10 minutes
     tokio::spawn(async move {
-        sleep(Duration::from_secs(60)).await;
+        sleep(Duration::from_secs(600)).await;
         println!("Preparing to save...");
         if let Some(readable_data) = client_data.read().await.get::<MyData>(){
             readable_data.save();
