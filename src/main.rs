@@ -1,6 +1,7 @@
 mod commands;
 mod data;
 use rand::{Rng, SeedableRng};
+use serenity::client::bridge::gateway::GatewayIntents;
 use data as myData;
 use rand::rngs::SmallRng;
 use commands::*;
@@ -132,10 +133,17 @@ impl EventHandler for Handler {
 async fn main(){
     let data = myData::Data::new();
     dotenv().ok(); // place variables from .env into this enviroment
+
+    // Only recieve messages
+    let mut intent = GatewayIntents::empty();
+        intent.set(GatewayIntents::GUILD_MESSAGES, true);
+        intent.set(GatewayIntents::DIRECT_MESSAGES, true);
+
     let mut client: Client = Client::builder(
             &env::var("DISCORD_TOKEN") // load DISCORD_TOKEN from enviroment
             .expect("Expected a token in the enviroment")  // panic if not present 
         )
+        .intents(intent)
         .event_handler(Handler).await
         .expect("Err creating client");
     
