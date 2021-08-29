@@ -147,6 +147,10 @@ async fn main(){
             .expect("Expected a token in the enviroment")  // panic if not present 
         )
         .intents(intent)
+        .application_id(
+            &env::var("APPLICATION_ID") // load APPLICATION_ID from enviroment
+            .expect("Expected application id in the enviroment")  // panic if not present
+        )
         .event_handler(Handler).await
         .expect("Err creating client");
     
