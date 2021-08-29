@@ -1,14 +1,17 @@
 mod commands;
 mod data;
 use rand::{Rng, SeedableRng};
-use serenity::client::bridge::gateway::GatewayIntents;
 use data as myData;
 use rand::rngs::SmallRng;
 use commands::*;
 use tokio::time::{sleep, Duration};
 use std::env;
 use dotenv::dotenv;
-use serenity::{async_trait, model::{channel::Message, gateway::Ready, interactions::Interaction}, prelude::*};
+use serenity::{
+    model::{channel::Message, gateway::Ready, interactions::Interaction},
+    client::bridge::gateway::GatewayIntents,
+    prelude::*
+    };
 
 
 struct MyData;
@@ -54,7 +57,7 @@ pub async fn reward_user(msg: &Message, ctx: &mut Context){
     }
 }
 
-#[async_trait]
+#[serenity::async_trait]
 impl EventHandler for Handler {
     async fn message(&self, mut ctx: Context, mut msg: Message) {
         // ignore messages from bots
