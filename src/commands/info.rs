@@ -34,7 +34,7 @@ pub async fn id(ctx: Context, msg: Message) -> Result<(), String>{
     }
     return Ok(())
 }
-pub async fn get_id_command(options: Vec::<interactions::ApplicationCommandInteractionDataOption>) -> Option<String>{
+pub async fn get_id_command(options: &Vec::<interactions::application_command::ApplicationCommandInteractionDataOption>) -> Option<String>{
     let target = options.get(0)?.value.as_ref()?.as_str()?;
     if !(target.starts_with("<") && target.ends_with(">")){
         return Some("That's not a valid target. Mention a user, role, channel, etc".to_string());

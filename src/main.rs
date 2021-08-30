@@ -8,10 +8,15 @@ use tokio::time::{sleep, Duration};
 use std::env;
 use dotenv::dotenv;
 use serenity::{
-    model::{channel::Message, gateway::Ready, interactions::Interaction},
+    model::{
+        channel::Message,
+        gateway::Ready,
+        interactions::Interaction,
+        prelude::*
+    },
     client::bridge::gateway::GatewayIntents,
     prelude::*
-    };
+};
 
 
 struct MyData;
@@ -108,22 +113,29 @@ impl EventHandler for Handler {
         }
     }
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
-        let (name, options) = if let Some(a) = interaction.data {
-            (a.name, a.options)
-        }else{return};
-        let response = match name.as_str() {
-            "roll" => fun::roll_command(options).await,
-            "coin" => fun::coin_command().await,
-            "id" => info::get_id_command(options).await,
-            _ => None
-        };
-        if let Some(a) = response {
-            if let Err(why) = interaction.channel_id.say(&ctx.http, a).await {
-                eprintln!("An Error occured: {}", why)
-            }
-        }else{
-            if let Err(why) = interaction.channel_id.say(&ctx.http, "Something went wrong.").await {
-                eprintln!("An Error occured: {}", why)
+        if let Interaction::ApplicationCommand(command) = interaction {
+            let response = match command.data.name.as_str() {
+                "roll" => fun::roll_command(&command.data.options).await,
+                "coin" => fun::coin_command().await,
+                "id" => info::get_id_command(&command.data.options).await,
+                _ => None
+            };
+            if let Some(a) = response {
+                if let Err(why) = command.create_interaction_response(&ctx.http, |response| {
+                    response
+                        .kind(interactions::InteractionResponseType::ChannelMessageWithSource)
+                        .interaction_response_data(|message| message.content(a))
+                }).await {
+                    eprintln!("An Error occured: {}", why)
+                }
+            }else{
+                if let Err(why) = command.create_interaction_response(&ctx.http, |response| {
+                    response
+                        .kind(interactions::InteractionResponseType::ChannelMessageWithSource)
+                        .interaction_response_data(|message| message.content("An Error occured."))
+                }).await {
+                    eprintln!("An Error occured: {}", why)
+                }
             }
         }
     }
@@ -142,16 +154,19 @@ async fn main(){
         intent.set(GatewayIntents::GUILD_MESSAGES, true);
         intent.set(GatewayIntents::DIRECT_MESSAGES, true);
 
-    let mut client: Client = Client::builder(
-            &env::var("DISCORD_TOKEN") // load DISCORD_TOKEN from enviroment
-            .expect("Expected a token in the enviroment")  // panic if not present 
-        )
-        .intents(intent)
-        .application_id(
-            &env::var("APPLICATION_ID") // load APPLICATION_ID from enviroment
+    let token = &env::var("DISCORD_TOKEN") // load DISCORD_TOKEN from enviroment
+            .expect("Expected a token in the enviroment");  // panic if not present
+
+    let application_id = env::var("APPLICATION_ID") // load APPLICATION_ID from enviroment
             .expect("Expected application id in the enviroment")  // panic if not present
-        )
-        .event_handler(Handler).await
+            .parse::<u64>().expect("application id not parsable as number");
+
+    // create client
+    let mut client: Client = Client::builder(token)
+        .intents(intent)
+        .application_id(application_id)
+        .event_handler(Handler)
+        .await
         .expect("Err creating client");
     
     client.data.write().await.insert::<MyData>(data);

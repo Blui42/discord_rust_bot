@@ -48,7 +48,7 @@ fn roll_dice(rolls: u8, sides: u8) -> (u16, u8, u8, String) {
     }
     return (total, min, max, summary)
 }
-pub async fn roll_command(options: Vec::<interactions::ApplicationCommandInteractionDataOption>) -> Option<String> {
+pub async fn roll_command(options: &Vec::<interactions::application_command::ApplicationCommandInteractionDataOption>) -> Option<String> {
     let rolls: u8 = options.get(0)?.value.as_ref()?.as_str()?.parse::<u8>().ok()?;
     let sides: u8 = options.get(1)?.value.as_ref()?.as_str()?.parse::<u8>().ok()?;
     let (total, min, max, summary) = roll_dice(rolls, sides);
