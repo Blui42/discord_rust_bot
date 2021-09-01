@@ -1,5 +1,3 @@
 /target
 .env
-prefix.json
-level.json
-cookies.json
+*.json
