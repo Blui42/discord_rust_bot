@@ -143,8 +143,8 @@ impl EventHandler for Handler {
     }
     async fn ready(&self, ctx: Context, ready: Ready){
         println!("{} is connected!", ready.user.tag());
-        let _ = ApplicationCommand::set_global_application_commands(&ctx.http, commands);
-        let _ = id::GuildId(792489181774479400).set_application_commands(&ctx.http, commands);
+        let _ = ApplicationCommand::set_global_application_commands(&ctx.http, commands).await;
+        // let _ = id::GuildId(792489181774479400).set_application_commands(&ctx.http, commands).await;
     }
 }
 
