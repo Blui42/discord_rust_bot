@@ -1,4 +1,3 @@
-mod set_application_commands;
 mod commands;
 mod data;
 use rand::{Rng, SeedableRng};
