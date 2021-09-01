@@ -13,7 +13,7 @@ pub async fn kick(ctx: Context, msg: Message) -> Result<(), String>{
         msg.channel_id.say(&ctx.http, "You don't have permission to kick").await.map_err(stringify_error)?;
         return Ok(())
     }
-    if msg.mentions.len() == 0 {
+    if msg.mentions.is_empty() {
         msg.channel_id.say(&ctx.http, "Noone was mentioned, so noone was kicked").await.map_err(stringify_error)?;
         return Ok(())
     }
@@ -23,18 +23,17 @@ pub async fn kick(ctx: Context, msg: Message) -> Result<(), String>{
     }
     let a = msg.guild(&ctx.cache).await.ok_or("Unknown Cache Error")?;
     for i in msg.mentions.iter(){
-        if let Ok(_) = a.kick_with_reason(&ctx.http, i.id, &format!("Kicked by `{}`", msg.author.tag())).await{
+        if a.kick_with_reason(&ctx.http, i.id, &format!("Kicked by `{}`", msg.author.tag())).await.is_ok(){
             if let Err(why) = msg.channel_id.say(&ctx.http, format!("Kicked `{}`", i.tag())).await{
                 eprintln!("An Error occured: {}", why)
             }
-        }else{
-            if let Err(why) = msg.channel_id.say(&ctx.http, format!("Can't kick `{}`", i.tag())).await{
-                eprintln!("An Error occured: {}", why)
-            }
+        }
+        else if let Err(why) = msg.channel_id.say(&ctx.http, format!("Can't kick `{}`", i.tag())).await{
+            eprintln!("An Error occured: {}", why)
         }
         sleep(Duration::from_millis(500)).await;
     }
-    return Ok(())
+    Ok(())
 }
 pub async fn unban(ctx: Context, msg: Message) -> Result<(), String>{
     if msg.is_private(){return Ok(())}
@@ -43,24 +42,23 @@ pub async fn unban(ctx: Context, msg: Message) -> Result<(), String>{
         msg.channel_id.say(&ctx.http, "You don't have permission to unban").await.map_err(stringify_error)?;
         return Ok(())
     }
-    if msg.mentions.len() == 0 {
+    if msg.mentions.is_empty() {
         msg.channel_id.say(&ctx.http, "Noone was mentioned, so noone was unbanned").await.map_err(stringify_error)?;
         return Ok(())
     }
     let a = msg.guild(&ctx.cache).await.ok_or("Unknown Cache Error")?;
     for i in msg.mentions.iter(){
-        if let Ok(_) = a.unban(&ctx.http, i.id).await{
+        if a.unban(&ctx.http, i.id).await.is_ok() {
             if let Err(why) = msg.channel_id.say(&ctx.http, format!("Unbanned `{}`", i.tag())).await{
                 eprintln!("An Error occured: {}", why)
             }
-        }else{
-            if let Err(why) = msg.channel_id.say(&ctx.http, format!("Can't unban `{}`", i.tag())).await{
-                eprintln!("An Error occured: {}", why)
-            }
+        }
+        else if let Err(why) = msg.channel_id.say(&ctx.http, format!("Can't unban `{}`", i.tag())).await{
+            eprintln!("An Error occured: {}", why)
         }
         sleep(Duration::from_millis(500)).await;
     }
-    return Ok(())
+    Ok(())
 }
 pub async fn ban(ctx: Context, msg: Message) -> Result<(), String>{
     if msg.is_private(){return Ok(())}
@@ -69,7 +67,7 @@ pub async fn ban(ctx: Context, msg: Message) -> Result<(), String>{
         msg.channel_id.say(&ctx.http, "You don't have permission to ban").await.map_err(stringify_error)?;
         return Ok(())
     }
-    if msg.mentions.len() == 0 {
+    if msg.mentions.is_empty() {
         msg.channel_id.say(&ctx.http, "Noone was mentioned, so noone was banned").await.map_err(stringify_error)?;
         return Ok(())
     }
@@ -79,14 +77,13 @@ pub async fn ban(ctx: Context, msg: Message) -> Result<(), String>{
     }
     let a = msg.guild(&ctx.cache).await.ok_or("Unknown Cache Error")?;
     for i in msg.mentions.iter(){
-        if let Ok(_) = a.ban_with_reason(&ctx.http, i.id, 0, &format!("Banned by `{}`", msg.author.tag())).await{
+        if a.ban_with_reason(&ctx.http, i.id, 0, &format!("Banned by `{}`", msg.author.tag())).await.is_ok(){
             if let Err(why) = msg.channel_id.say(&ctx.http, format!("Banned `{}`", i.tag())).await{
                 eprintln!("An Error occured: {}", why)
             }
-        }else{
-            if let Err(why) = msg.channel_id.say(&ctx.http, format!("Can't ban `{}`", i.tag())).await{
-                eprintln!("An Error occured: {}", why)
-            }
+        }
+        else if let Err(why) = msg.channel_id.say(&ctx.http, format!("Can't ban `{}`", i.tag())).await{
+            eprintln!("An Error occured: {}", why)
         }
         sleep(Duration::from_millis(500)).await;
     }
@@ -106,7 +103,7 @@ pub async fn prefix(mut ctx: Context, msg: Message) -> Result<(), String>{
     }
     set_prefix(&msg, &mut ctx, &new_prefix).await;
     msg.channel_id.say(&ctx.http, format!("Successfully set prefix to `{}`", new_prefix)).await.map_err(stringify_error)?;
-    return Ok(())
+    Ok(())
 }
 pub async fn delete(ctx: Context, msg: Message) -> Result<(), String>{
     if msg.is_private(){return Ok(())}
@@ -125,10 +122,10 @@ pub async fn delete(ctx: Context, msg: Message) -> Result<(), String>{
     }
     let guild_channel = msg.channel(&ctx.cache).await.ok_or("Unknown Cache Error")?.guild().ok_or("Unknown Cache Error")?;
     let messages = guild_channel.messages(&ctx.http,   |retriever|{retriever.limit(amount+1)}  ).await.map_err(stringify_error)?;
-    if let Err(_) = guild_channel.delete_messages(&ctx.http, messages).await{
+    if guild_channel.delete_messages(&ctx.http, messages).await.is_err(){
         let error_msg = msg.channel_id.say(&ctx.http, "Please specify a valid amount of messages to delete (1-100)").await.map_err(stringify_error)?;
         sleep(Duration::from_secs(3)).await;
         error_msg.delete(&ctx.http).await.map_err(stringify_error)?;
     }
-    return Ok(())
+    Ok(())
 }

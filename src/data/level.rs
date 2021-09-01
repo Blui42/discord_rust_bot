@@ -17,7 +17,7 @@ impl LevelGuild{
         let a = self.data
             .get(guild.to_string())?
             .get(user.to_string())?;
-        return serde_json::from_value(a.clone()).ok()?;
+        serde_json::from_value(a.clone()).ok()?
     }
     pub fn set(&mut self, user: &u64, guild: &u64, to: &LevelXP){
         if let Some(a) = self.data.get_mut(guild.to_string()){
@@ -60,7 +60,7 @@ impl LevelGuild{
     pub fn new(path: String) -> Self{
         let file_contents = if let Ok(a) = fs::read_to_string(&path) {a} else {"{}".to_string()};
         let data: serde_json::Value = serde_json::from_str(&file_contents).unwrap_or_default();
-        return Self{data, path};
+        Self{data, path}
     }
     
     pub fn save(&self){

@@ -14,7 +14,7 @@ impl Cookies{
     pub fn get(&self, user: &u64) -> Option<u64>{
         let a = self.data
             .get(user.to_string())?;
-        return a.as_u64();
+        a.as_u64()
     }
     pub fn set(&mut self, user: &u64, cookies: &u64){
         if let Some(b) = self.data.get_mut(user.to_string()){
@@ -39,7 +39,7 @@ impl Cookies{
     pub fn new(path: String) -> Self{
         let file_contents = if let Ok(a) = fs::read_to_string(&path) {a} else {"{}".to_string()};
         let data: serde_json::Value = serde_json::from_str(&file_contents).unwrap_or_default();
-        return Self{data, path};
+        Self{data, path}
     }
     
     pub fn save(&self){

@@ -13,7 +13,7 @@ impl Prefix{
         if let Some(a) = self.prefix.get(guild.to_string())?.as_str(){  // check if the guild has a prefix
             return Some(a.to_string());  // if so, return it
         }
-        return None  // otherwise, return None
+        None  // otherwise, return None
     }
     pub fn set(&mut self, guild: u64, prefix:  &str){
         if let Some(a) = self.prefix.get_mut(guild.to_string()){
@@ -30,7 +30,7 @@ impl Prefix{
     pub fn new(path: String) -> Self{
         let file_contents = if let Ok(a) = fs::read_to_string(&path) {a} else {"{}".to_string()};
         let prefix: serde_json::Value = serde_json::from_str(&file_contents).unwrap_or_default();
-        return Self{path, prefix};
+        Self{path, prefix}
     }
     pub fn save(&self){
         if let Ok(file_info) = serde_json::to_string_pretty(&self.prefix){

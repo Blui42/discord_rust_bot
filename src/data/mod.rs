@@ -11,7 +11,7 @@ pub struct Data {
 }
 impl Data {
     pub fn new() -> Self {
-        return Self{
+        Self{
             prefix: prefix::Prefix::new("prefix.json".to_string()),
             level: level::LevelGuild::new("level.json".to_string()),
             cookies: cookies::Cookies::new("cookies.json".to_string()),
@@ -35,6 +35,6 @@ pub struct LevelXP{
 }
 impl LevelXP {
     pub fn new() -> Self{
-        return Self{level: 1, xp: 0};
+        Self{level: 1, xp: 0}
     }
 }

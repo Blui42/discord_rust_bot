@@ -143,19 +143,6 @@ impl EventHandler for Handler {
     }
     async fn ready(&self, ctx: Context, ready: Ready){
         println!("{} is connected!", ready.user.tag());
-        /*let commands = Box::new(|commands: &mut CreateApplicationCommands|{
-            commands
-            .create_application_command(|command| {
-                command.name("id")
-                .description("Get the ID of the mentioned user/role/channel")
-                .create_option(|option| {
-                    option.name("target")
-                    .description("user/role/channel to get the ID from")
-                    .kind(ApplicationCommandOptionType::Mentionable)
-                    .required(true)
-                })
-            })
-        });*/
         let _ = ApplicationCommand::set_global_application_commands(&ctx.http, commands);
         let _ = id::GuildId(792489181774479400).set_application_commands(&ctx.http, commands);
     }
