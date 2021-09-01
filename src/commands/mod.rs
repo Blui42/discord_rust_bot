@@ -12,12 +12,33 @@ pub fn stringify_error<X: std::fmt::Debug>(error: X) -> String{
 pub fn commands(commands: &mut CreateApplicationCommands) -> &mut CreateApplicationCommands {
     commands
     .create_application_command(|command| {
-        command.name("id")
+        command
+        .name("id")
         .description("Get the ID of the mentioned user/role/channel")
         .create_option(|option| {
-            option.name("target")
+            option
+            .name("target")
             .description("user/role/channel to get the ID from")
             .kind(ApplicationCommandOptionType::Mentionable)
+            .required(true)
+        })
+    })
+    .create_application_command(|command| {
+        command
+        .name("roll")
+        .description("Rolls dice")
+        .create_option(|option| {
+            option
+            .name("rolls")
+            .description("The amount of dice to roll")
+            .kind(ApplicationCommandOptionType::Integer)
+            .required(true)
+        })
+        .create_option(|option| {
+            option
+            .name("sides")
+            .description("the amount of sides the thrown dice have")
+            .kind(ApplicationCommandOptionType::Integer)
             .required(true)
         })
     })

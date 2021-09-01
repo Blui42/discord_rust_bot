@@ -49,9 +49,24 @@ fn roll_dice(rolls: u8, sides: u8) -> (u16, u8, u8, String) {
     (total, min, max, summary)
 }
 pub async fn roll_command(options: &Vec::<interactions::application_command::ApplicationCommandInteractionDataOption>) -> Option<String> {
-    let rolls: u8 = options.get(0)?.value.as_ref()?.as_str()?.parse::<u8>().ok()?;
-    let sides: u8 = options.get(1)?.value.as_ref()?.as_str()?.parse::<u8>().ok()?;
-    let (total, min, max, summary) = roll_dice(rolls, sides);
+    let rolls: i64 = options.get(0)?.value.as_ref()?.as_i64()?;
+    let sides: i64 = options.get(1)?.value.as_ref()?.as_i64()?;
+    if rolls < 0 || sides < 0 {
+        return Some("<= !em pleH <=".to_string())
+    }
+    if rolls == 0 {
+        return Some("Rolled no dice. (What did you expect?)".to_string())
+    }
+    if sides == 0 {
+        return Some("0-sided dice are too dangerous to use.".to_string())
+    }
+    if sides == 1 {
+        return Some("*Throws a ball*".to_string())
+    }
+    if rolls > 255 || sides > 255 {
+        return Some("A number that I'm too lazy to calculate (Try numbers 255 and below)".to_string())
+    }
+    let (total, min, max, summary) = roll_dice(rolls as u8, sides as u8);
     Some(format!("**Rolled {} {}-sided dice.**\n**Result: `{}`**\n Rolled {}x1 and {}x{} \n\n Detailed: ```{}```", rolls, sides, total, min, max, sides, summary))
 }
 pub async fn coin_command() -> Option<String> {
