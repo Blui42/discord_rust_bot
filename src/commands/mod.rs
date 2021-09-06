@@ -42,4 +42,9 @@ pub fn commands(commands: &mut CreateApplicationCommands) -> &mut CreateApplicat
             .required(true)
         })
     })
+    .create_application_command(|command| {
+        command
+        .name("coin")
+        .description("Toss a coin")
+    })
 }
