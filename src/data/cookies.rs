@@ -1,10 +1,10 @@
 #![allow(dead_code)]
 use std::fs;
-use serde_json;
+use serde_json::{self, Map, Value};
 
 
 pub struct Cookies{
-    data: serde_json::Value,
+    data: Map<String, Value>,
     path: String,
 }
 
@@ -13,12 +13,12 @@ pub struct Cookies{
 impl Cookies{
     pub fn get(&self, user: &u64) -> Option<u64>{
         let a = self.data
-            .get(user.to_string())?;
+            .get(&user.to_string())?;
         a.as_u64()
     }
     pub fn set(&mut self, user: &u64, cookies: &u64){
-        if let Some(b) = self.data.get_mut(user.to_string()){
-            *b  = serde_json::Value::from(*cookies);
+        if let Some(b) = self.data.get_mut(&user.to_string()){
+            *b  = Value::from(*cookies);
             return;
         }
         self.add_user(user)
@@ -31,14 +31,12 @@ impl Cookies{
         self.add_user(user)
     }
     fn add_user(&mut self, user: &u64){
-        if let Some(map) = self.data.as_object_mut(){
-            map.insert(user.to_string(), serde_json::Value::from(0_u64));
-        }
+        self.data.insert(user.to_string(), Value::from(0_u64));
     }
 
     pub fn new(path: String) -> Self{
         let file_contents = if let Ok(a) = fs::read_to_string(&path) {a} else {"{}".to_string()};
-        let data: serde_json::Value = serde_json::from_str(&file_contents).unwrap_or_default();
+        let data: Map<String, Value> = serde_json::from_str(&file_contents).unwrap_or_default();
         Self{data, path}
     }
     
