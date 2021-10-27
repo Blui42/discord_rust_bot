@@ -1,7 +1,5 @@
 mod commands;
 mod data;
-use rand::{Rng, SeedableRng};
-use rand::rngs::SmallRng;
 use commands::*;
 use tokio::time::{sleep, Duration};
 use std::env;
@@ -34,39 +32,7 @@ impl TypeMapKey for Prefix {
 struct Handler;
 
 
-async fn get_prefix(msg: &Message, ctx: &Context) -> Option<String>{
-    // return "!" for PMs
-    if msg.is_private(){return Some("!".to_string())}
-    // get immutable reference to prefix variable
-    return ctx.data
-        .read().await
-        .get::<Prefix>()?
-        .get(msg.guild_id?.0);
-}
-pub async fn set_prefix(msg: &Message, ctx: &mut Context, new_prefix: &str){
-    // get mutable prefix variable
-    if let Some(prefix) = ctx.data.write().await.get_mut::<Prefix>(){
-        if let Some(a) = msg.guild_id {
-            prefix.set(a.0, new_prefix);
-            return;
-        }
-    }
-}
-// give the user cookies and xp
-pub async fn reward_user(msg: &Message, ctx: &mut Context){
-    let author_id = msg.author.id.0;
-    if let Some(data) = ctx.data.write().await.get_mut::<MyData>(){
-        let mut rng = SmallRng::from_entropy();
-        data.cookies.give(&author_id, rng.gen_range(0..2)); // cookies
-        // xp
-        let xp = rng.gen_range(0..5);
-        data.level.add_xp(&author_id, &0, xp); // global xp
-        if let Some(a) = msg.guild_id {
-            data.level.add_xp(&author_id, &a.0, xp); // guild-specific xp
-            return;
-        }
-    }
-}
+
 
 #[serenity::async_trait]
 impl EventHandler for Handler {
@@ -75,16 +41,16 @@ impl EventHandler for Handler {
         if msg.author.bot {return}
 
         // get the prefix for the current guild
-        let prefix: String = match get_prefix(&msg, &ctx).await {
+        let prefix: String = match data::prefix::get_prefix(&msg, &ctx).await {
             Some(a) => a,
             None => {
-                set_prefix(&msg, &mut ctx, "!").await;
+                data::prefix::set_prefix(&msg, &mut ctx, "!").await;
                 "!".to_string()
             }
         };
 
         // gives xp and cookies to user
-        reward_user(&msg, &mut ctx).await;
+        data::reward_user(&msg, &mut ctx).await;
 
         if ! msg.content.starts_with(&prefix) {
             // print out the prefix if the bot is mentioned

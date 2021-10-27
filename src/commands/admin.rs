@@ -1,5 +1,5 @@
 use tokio::time::{sleep, Duration};
-use crate::{set_prefix, stringify_error};
+use crate::{data::prefix::set_prefix, stringify_error};
 use serenity::{
     model::channel::Message,
     prelude::*,

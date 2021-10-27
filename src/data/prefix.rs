@@ -1,5 +1,6 @@
 use std::fs;
 use serde_json::{self, Map, Value};
+use serenity::{client::Context, model::channel::Message};
 
 
 pub struct Prefix{
@@ -44,3 +45,21 @@ impl Drop for Prefix{
     }
 }
 
+pub async fn get_prefix(msg: &Message, ctx: &Context) -> Option<String>{
+    // return "!" for PMs
+    if msg.is_private(){return Some("!".to_string())}
+    // get immutable reference to prefix variable
+    return ctx.data
+        .read().await
+        .get::<crate::Prefix>()?
+        .get(msg.guild_id?.0);
+}
+pub async fn set_prefix(msg: &Message, ctx: &mut Context, new_prefix: &str){
+    // get mutable prefix variable
+    if let Some(prefix) = ctx.data.write().await.get_mut::<crate::Prefix>(){
+        if let Some(a) = msg.guild_id {
+            prefix.set(a.0, new_prefix);
+            return;
+        }
+    }
+}
