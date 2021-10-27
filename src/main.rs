@@ -26,6 +26,11 @@ impl TypeMapKey for MyData{
     type Value = data::Data;
 }
 
+struct Prefix;
+impl TypeMapKey for Prefix {
+    type Value = data::prefix::Prefix;
+}
+
 struct Handler;
 
 
@@ -35,15 +40,14 @@ async fn get_prefix(msg: &Message, ctx: &Context) -> Option<String>{
     // get immutable reference to prefix variable
     return ctx.data
         .read().await
-        .get::<MyData>()?
-        .prefix
+        .get::<Prefix>()?
         .get(msg.guild_id?.0);
 }
 pub async fn set_prefix(msg: &Message, ctx: &mut Context, new_prefix: &str){
     // get mutable prefix variable
-    if let Some(data) = ctx.data.write().await.get_mut::<MyData>(){
+    if let Some(prefix) = ctx.data.write().await.get_mut::<Prefix>(){
         if let Some(a) = msg.guild_id {
-            data.prefix.set(a.0, new_prefix);
+            prefix.set(a.0, new_prefix);
             return;
         }
     }
@@ -150,30 +154,35 @@ impl EventHandler for Handler {
 
 #[tokio::main]
 async fn main(){
-    let data = data::Data::new();
     dotenv().ok(); // place variables from .env into this enviroment
-
+    
     // Only recieve messages
     let mut intent = GatewayIntents::empty();
-        intent.set(GatewayIntents::GUILD_MESSAGES, true);
-        intent.set(GatewayIntents::DIRECT_MESSAGES, true);
-
+    intent.set(GatewayIntents::GUILD_MESSAGES, true);
+    intent.set(GatewayIntents::DIRECT_MESSAGES, true);
+    
     let token = &env::var("DISCORD_TOKEN") // load DISCORD_TOKEN from enviroment
-            .expect("Expected a token in the enviroment");  // panic if not present
-
+    .expect("Expected a token in the enviroment");  // panic if not present
+    
     let application_id = env::var("APPLICATION_ID") // load APPLICATION_ID from enviroment
-            .expect("Expected application id in the enviroment")  // panic if not present
-            .parse::<u64>().expect("application id not parsable as number");
-
+    .expect("Expected application id in the enviroment")  // panic if not present
+    .parse::<u64>().expect("application id not parsable as number");
+    
     // create client
     let mut client: Client = Client::builder(token)
-        .intents(intent)
-        .application_id(application_id)
-        .event_handler(Handler)
-        .await
-        .expect("Err creating client");
+    .intents(intent)
+    .application_id(application_id)
+    .event_handler(Handler)
+    .await
+    .expect("Err creating client");
     
-    client.data.write().await.insert::<MyData>(data);
+    {
+        let mut client_data = client.data.write().await;
+        let data = data::Data::new();
+        client_data.insert::<MyData>(data);
+        let prefix = data::prefix::Prefix::new("prefix.json".to_string());
+        client_data.insert::<Prefix>(prefix);
+    }
 
     let shard_manager = client.shard_manager.clone();
     let client_data = client.data.clone();
@@ -190,6 +199,11 @@ async fn main(){
         println!("Preparing to save...");
         if let Some(readable_data) = client_data.read().await.get::<MyData>(){
             readable_data.save();
+        }else{
+            eprintln!("Data to save was not accessible");
+        }
+        if let Some(prefix) = client_data.read().await.get::<Prefix>(){
+            prefix.save();
         }else{
             eprintln!("Data to save was not accessible");
         }

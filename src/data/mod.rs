@@ -5,21 +5,17 @@ pub mod cookies;
 use serde::{Deserialize, Serialize};
 
 pub struct Data {
-    pub prefix: prefix::Prefix,
     pub level: level::Level,
     pub cookies: cookies::Cookies,
 }
 impl Data {
     pub fn new() -> Self {
         Self{
-            prefix: prefix::Prefix::new("prefix.json".to_string()),
             level: level::Level::new("level.json".to_string()),
             cookies: cookies::Cookies::new("cookies.json".to_string()),
         }
     }
     pub fn save(&self) {
-        println!("Saving prefixes...");
-        self.prefix.save();
         println!("Saving levels...");
         self.level.save();
         println!("Saving cookies...");
