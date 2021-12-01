@@ -1,6 +1,7 @@
 pub mod prefix;
 pub mod level;
 pub mod cookies;
+pub mod config;
 
 use rand::{Rng, SeedableRng, rngs::SmallRng};
 use serde::{Deserialize, Serialize};
