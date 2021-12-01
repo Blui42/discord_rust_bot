@@ -127,15 +127,23 @@ async fn main(){
     intent.set(GatewayIntents::GUILD_MESSAGES, true);
     intent.set(GatewayIntents::DIRECT_MESSAGES, true);
     
-    let token = &env::var("DISCORD_TOKEN") // load DISCORD_TOKEN from enviroment
+    let token = env::var("DISCORD_TOKEN") // load DISCORD_TOKEN from enviroment
     .expect("Expected a token in the enviroment");  // panic if not present
     
-    let application_id = env::var("APPLICATION_ID") // load APPLICATION_ID from enviroment
-    .expect("Expected application id in the enviroment")  // panic if not present
-    .parse::<u64>().expect("application id not parsable as number");
-    
+    let config = data::config::Config::from_file("config.toml").unwrap_or_default();
+
+    // Try to read Application ID from config.toml.
+    // On failure, try to derive Application ID from bot token. 
+    let application_id = match config.application_id {
+        Some(a) => a,
+        None => {
+            serenity::client::parse_token(&token)
+            .expect("Application ID was not given and could not be derived from token.")
+            .bot_user_id.0
+        }
+    };
     // create client
-    let mut client: Client = Client::builder(token)
+    let mut client: Client = Client::builder(&token)
     .intents(intent)
     .application_id(application_id)
     .event_handler(Handler)
