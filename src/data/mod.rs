@@ -26,6 +26,9 @@ impl Data {
     }
 }
 
+impl serenity::prelude::TypeMapKey for Data {
+    type Value = Self;
+}
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct LevelXP{
@@ -42,7 +45,7 @@ impl LevelXP {
 // give the user cookies and xp
 pub async fn reward_user(msg: &Message, ctx: &mut Context){
     let author_id = msg.author.id.0;
-    if let Some(data) = ctx.data.write().await.get_mut::<crate::MyData>(){
+    if let Some(data) = ctx.data.write().await.get_mut::<Data>(){
         let mut rng = SmallRng::from_entropy();
         data.cookies.give(&author_id, rng.gen_range(0..2)); // cookies
         // xp

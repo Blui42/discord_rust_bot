@@ -17,22 +17,14 @@ use serenity::{
     client::bridge::gateway::GatewayIntents,
     prelude::*
 };
+use data::{
+    Data,
+    prefix::Prefix,
+    config::Config
+};
 
-
-struct MyData;
-impl TypeMapKey for MyData{
-    type Value = data::Data;
-}
-
-struct Prefix;
-impl TypeMapKey for Prefix {
-    type Value = data::prefix::Prefix;
-}
 
 struct Handler;
-
-
-
 
 #[serenity::async_trait]
 impl EventHandler for Handler {
@@ -152,10 +144,11 @@ async fn main(){
     
     {
         let mut client_data = client.data.write().await;
-        let data = data::Data::new();
-        client_data.insert::<MyData>(data);
-        let prefix = data::prefix::Prefix::new("prefix.json".to_string());
+        let data = Data::new();
+        client_data.insert::<Data>(data);
+        let prefix = Prefix::new("prefix.json".to_string());
         client_data.insert::<Prefix>(prefix);
+        client_data.insert::<Config>(config);
     }
 
     let shard_manager = client.shard_manager.clone();
@@ -171,7 +164,7 @@ async fn main(){
     tokio::spawn(async move {
         sleep(Duration::from_secs(600)).await;
         println!("Preparing to save...");
-        if let Some(readable_data) = client_data.read().await.get::<MyData>(){
+        if let Some(readable_data) = client_data.read().await.get::<Data>(){
             readable_data.save();
         }else{
             eprintln!("Data to save was not accessible");

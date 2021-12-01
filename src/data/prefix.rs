@@ -39,10 +39,15 @@ impl Prefix{
         }
     }
 }
+
 impl Drop for Prefix{
     fn drop(&mut self) { 
         self.save();
     }
+}
+
+impl serenity::prelude::TypeMapKey for Prefix {
+    type Value = Self;
 }
 
 pub async fn get_prefix(msg: &Message, ctx: &Context) -> Option<String>{

@@ -20,6 +20,11 @@ impl Config {
         return toml::from_slice::<Self>(file_content.as_slice()).ok();
     }
 }
+
+impl serenity::prelude::TypeMapKey for Config {
+    type Value = Self;
+}
+
 impl Default for Config {
     fn default() -> Self {
         Self { 
