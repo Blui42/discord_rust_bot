@@ -32,6 +32,12 @@ impl EventHandler for Handler {
         // ignore messages from bots
         if msg.author.bot {return}
 
+        #[cfg(not(feature="respond_dm"))]
+        if msg.is_private() {return}
+
+        #[cfg(not(feature="respond_server"))]
+        if !msg.is_private() {return}
+
         // get the prefix for the current guild
         #[cfg(feature="custom_prefix")]
         let prefix: String = match data::prefix::get_prefix(&msg, &ctx).await {
