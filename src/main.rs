@@ -131,31 +131,33 @@ async fn main(){
     }
 
     let shard_manager = client.shard_manager.clone();
-    let client_data = client.data.clone();
     tokio::spawn(async move {
         tokio::signal::ctrl_c().await.expect("Could not register ctrl+c handler");
         println!("Shutting Down...");
         shard_manager.lock().await.shutdown_all().await;
         println!("Successfully Shut Down");
     });
-
+    
     // automatically save every 10 minutes
     #[cfg(feature="save_data")]
-    tokio::spawn(async move {
-        sleep(Duration::from_secs(600)).await;
-        println!("Preparing to save...");
-        if let Some(readable_data) = client_data.read().await.get::<Data>(){
-            readable_data.save();
-        }else{
-            eprintln!("Data to save was not accessible");
-        }
-        #[cfg(feature="custom_prefix")]
-        if let Some(prefix) = client_data.read().await.get::<Prefix>(){
-            prefix.save();
-        }else{
-            eprintln!("Data to save was not accessible");
-        }
-    });
+    {
+        let client_data = client.data.clone();
+        tokio::spawn(async move {
+            sleep(Duration::from_secs(600)).await;
+            println!("Preparing to save...");
+            if let Some(readable_data) = client_data.read().await.get::<Data>(){
+                readable_data.save();
+            }else{
+                eprintln!("Data to save was not accessible");
+            }
+            #[cfg(feature="custom_prefix")]
+            if let Some(prefix) = client_data.read().await.get::<Prefix>(){
+                prefix.save();
+            }else{
+                eprintln!("Data to save was not accessible");
+            }
+        });
+    }
     
     if let Err(why) = client.start_autosharded().await {
         println!("Client error: {:?}", why);
