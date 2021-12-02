@@ -28,7 +28,7 @@ struct Handler;
 
 #[serenity::async_trait]
 impl EventHandler for Handler {
-    async fn message(&self, mut ctx: Context, mut msg: Message) {
+    async fn message(&self, mut ctx: Context, msg: Message) {
         // ignore messages from bots
         if msg.author.bot {return}
 
@@ -44,37 +44,7 @@ impl EventHandler for Handler {
         // gives xp and cookies to user
         data::reward_user(&msg, &mut ctx).await;
 
-        if ! msg.content.starts_with(&prefix) {
-            // print out the prefix if the bot is mentioned
-            if let Ok(true) = msg.mentions_me(&ctx.http).await {
-                if let Err(why) = msg.channel_id.say(&ctx.http, format!("Hi, {}! The current prefix is {}", msg.author, prefix)).await{
-                    eprintln!("An Error occured: {}", why)
-                }
-            }
-            return
-        }
-        // split command off of the message, make command lowercase for case insensitivity
-        msg.content = msg.content.replacen(&prefix, "", 1); 
-        let command = msg.content.split_whitespace().next().unwrap_or(" ").to_lowercase();
-        msg.content = msg.content.replacen(&command, "", 1).replacen(" ", "", 1);
-        // matches for correct command, hands over ctx, msg
-        let command_result = match command.as_str() {
-            // "cmd"    => category::cmd(ctx, msg).await,       // Comment on what this does
-            "ping"      => info::ping(ctx, msg).await,          // send pong!
-            "prefix"    => admin::prefix(ctx, msg).await,       // change prefix
-            "kick"      => admin::kick(ctx, msg).await,         // kick all users mentioned in the message
-            "ban"       => admin::ban(ctx, msg).await,          // ban all users mentioned in the message 
-            "unban"     => admin::unban(ctx, msg).await,        // unban all users mentioned in the message 
-            "pic"       => info::pic(ctx, msg).await,           // send profile picture of message.author or all users mentioned
-            "delete"    => admin::delete(ctx, msg).await,       // delete specified amount of messages
-            "id"        => info::id(ctx, msg).await,            // get id of all mentioned users/roles/channels, etc.
-            "roll"      => fun::roll(ctx, msg).await,           // roll dice according to arg
-            "coin"      => fun::coin(ctx, msg).await,           // flip a coin
-            _ => Ok(()),
-        };
-        if let Err(why) = command_result {
-            eprintln!("An Error occured: {}", why)
-        }
+        commands::parse_command(&prefix, msg, ctx).await;
     }
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
         if let Interaction::ApplicationCommand(command) = interaction {
