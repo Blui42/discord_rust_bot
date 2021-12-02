@@ -44,32 +44,34 @@ impl EventHandler for Handler {
         // gives xp and cookies to user
         data::reward_user(&msg, &mut ctx).await;
 
+        #[cfg(feature="legacy_commands")]
         commands::parse_command(&prefix, msg, ctx).await;
     }
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
-        if let Interaction::ApplicationCommand(command) = interaction {
-            let response = match command.data.name.as_str() {
-                "roll" => fun::roll_command(&command.data.options).await,
-                "coin" => fun::coin_command().await,
-                "id" => info::get_id_command(&command.data.options).await,
-                _ => None
-            };
-            if let Some(a) = response {
-                if let Err(why) = command.create_interaction_response(&ctx.http, |response| {
-                    response
-                        .kind(interactions::InteractionResponseType::ChannelMessageWithSource)
-                        .interaction_response_data(|message| message.content(a))
-                }).await {
-                    eprintln!("An Error occured: {}", why)
-                }
-            }else{
-                if let Err(why) = command.create_interaction_response(&ctx.http, |response| {
-                    response
-                        .kind(interactions::InteractionResponseType::ChannelMessageWithSource)
-                        .interaction_response_data(|message| message.content("An Error occured."))
-                }).await {
-                    eprintln!("An Error occured: {}", why)
-                }
+        let command = 
+        if let Interaction::ApplicationCommand(command) = interaction 
+        {command}else{return};
+        let response = match command.data.name.as_str() {
+            "roll" => fun::roll_command(&command.data.options).await,
+            "coin" => fun::coin_command().await,
+            "id" => info::get_id_command(&command.data.options).await,
+            _ => None
+        };
+        if let Some(a) = response {
+            if let Err(why) = command.create_interaction_response(&ctx.http, |response| {
+                response
+                    .kind(interactions::InteractionResponseType::ChannelMessageWithSource)
+                    .interaction_response_data(|message| message.content(a))
+            }).await {
+                eprintln!("An Error occured: {}", why)
+            }
+        }else{
+            if let Err(why) = command.create_interaction_response(&ctx.http, |response| {
+                response
+                    .kind(interactions::InteractionResponseType::ChannelMessageWithSource)
+                    .interaction_response_data(|message| message.content("An Error occured."))
+            }).await {
+                eprintln!("An Error occured: {}", why)
             }
         }
     }
