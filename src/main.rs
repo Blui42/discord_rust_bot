@@ -33,6 +33,7 @@ impl EventHandler for Handler {
         if msg.author.bot {return}
 
         // get the prefix for the current guild
+        #[cfg(feature="custom_prefix")]
         let prefix: String = match data::prefix::get_prefix(&msg, &ctx).await {
             Some(a) => a,
             None => {
@@ -40,7 +41,8 @@ impl EventHandler for Handler {
                 "!".to_string()
             }
         };
-
+        #[cfg(not(feature="custom_prefix"))]
+        let prefix: String = "!";
         // gives xp and cookies to user
         data::reward_user(&msg, &mut ctx).await;
 
@@ -118,8 +120,13 @@ async fn main(){
         let mut client_data = client.data.write().await;
         let data = Data::new();
         client_data.insert::<Data>(data);
-        let prefix = Prefix::new("prefix.json".to_string());
-        client_data.insert::<Prefix>(prefix);
+
+        #[cfg(feature="custom_prefix")]
+        {
+            let prefix = Prefix::new("prefix.json".to_string());
+            client_data.insert::<Prefix>(prefix);
+        }
+
         client_data.insert::<Config>(config);
     }
 
@@ -133,6 +140,7 @@ async fn main(){
     });
 
     // automatically save every 10 minutes
+    #[cfg(feature="save_data")]
     tokio::spawn(async move {
         sleep(Duration::from_secs(600)).await;
         println!("Preparing to save...");
@@ -141,6 +149,7 @@ async fn main(){
         }else{
             eprintln!("Data to save was not accessible");
         }
+        #[cfg(feature="custom_prefix")]
         if let Some(prefix) = client_data.read().await.get::<Prefix>(){
             prefix.save();
         }else{

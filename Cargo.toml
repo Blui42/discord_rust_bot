@@ -16,6 +16,13 @@ rand = { version = "0.8.3", features = ["small_rng"] }
 toml = {version = "0.5.8"}
 
 [features]
-default = ["legacy_commands", "custom_prefix"]
+default = ["legacy_commands", "custom_prefix", "save_data", "respond_server", "respond_dm", "cookies", "xp"]
 legacy_commands = []
 custom_prefix = ["legacy_commands"]
+commands_home_only = []
+respond_dm = []
+respond_server = []
+owners_are_admins = []
+cookies = []
+xp = []
+save_data = []
