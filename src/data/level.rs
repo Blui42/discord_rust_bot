@@ -1,9 +1,8 @@
 #![allow(dead_code)]
+#![cfg(feature="xp")]
 use std::fs;
 use serde_json::{self, Map, Value};
-use super::LevelXP;
-
-
+use serde::{Deserialize, Serialize};
 
 pub struct Level{
     data: Map<String, Value>,
@@ -75,4 +74,13 @@ impl Drop for Level{
     }
 }
 
-
+#[derive(Deserialize, Serialize, Debug)]
+pub struct LevelXP{
+    pub level: u64,
+    pub xp: u64,
+}
+impl LevelXP {
+    pub fn new() -> Self{
+        Self{level: 1, xp: 0}
+    }
+}

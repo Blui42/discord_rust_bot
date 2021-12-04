@@ -1,4 +1,6 @@
 #![allow(dead_code)]
+#![cfg(feature="cookies")]
+
 use std::fs;
 use serde_json::{self, Map, Value};
 
