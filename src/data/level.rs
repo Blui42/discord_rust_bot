@@ -31,12 +31,7 @@ impl Level{
     }
     pub fn add_xp(&mut self, user: &u64, guild: &u64, xp: u64) {
         if let Some(mut current_level) = self.get(user, guild){
-            current_level.xp += xp;
-            let xp_target = current_level.level * 10;
-            if current_level.xp > xp_target {
-                current_level.xp -= xp_target;
-                current_level.level += 1;
-            }
+            current_level.add_xp(xp);
             self.set(user, guild, &current_level);
             return;
         }
@@ -80,7 +75,16 @@ pub struct LevelXP{
     pub xp: u64,
 }
 impl LevelXP {
-    pub fn new() -> Self{
+    pub fn new() -> Self {
         Self{level: 1, xp: 0}
+    }
+
+    pub fn add_xp(&mut self, extra_xp: u64) {
+        self.xp += extra_xp;
+        let xp_target = self.level * 10;
+        while self.xp > xp_target {
+            self.xp -= xp_target;
+            self.level += 1;
+        }
     }
 }
