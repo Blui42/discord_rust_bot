@@ -5,6 +5,7 @@ use serenity::{
 };
 use rand::{distributions::{Distribution, Uniform}, prelude::*};
 
+#[cfg(feature="legacy_commands")]
 pub async fn roll(ctx: Context, msg: Message) -> Result<(), String>{
     let value = msg.content.replace(" ", "");
     let mut an_iterator = value.split('d');
@@ -79,6 +80,7 @@ pub fn flip_coin() -> String {
     if number == 127 {return "It didn't tip over!".to_string()}
   /*if number == 128 return*/"It fell under the table!".to_string()
 }
+#[cfg(feature="legacy_commands")]
 pub async fn coin(ctx: Context, msg: Message) -> Result<(), String>{
     msg.channel_id.say(&ctx.http, &flip_coin()).await.map_err(stringify_error)?;
     Ok(())

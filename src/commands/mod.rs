@@ -50,6 +50,7 @@ pub fn commands(commands: &mut CreateApplicationCommands) -> &mut CreateApplicat
         .description("Toss a coin")
     })
 }
+#[cfg(feature="legacy_commands")]
 pub async fn parse_command(prefix: &str, mut msg: Message, ctx: Context){
     if ! msg.content.starts_with(&prefix) {
         // print out the prefix if the bot is mentioned

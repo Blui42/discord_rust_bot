@@ -6,6 +6,7 @@ use serenity::{
 };
 
 
+#[cfg(feature="legacy_commands")]
 pub async fn kick(ctx: Context, msg: Message) -> Result<(), String>{
     if msg.is_private(){return Ok(())}
     // if the member doesn't have the Admin permission
@@ -35,6 +36,7 @@ pub async fn kick(ctx: Context, msg: Message) -> Result<(), String>{
     }
     Ok(())
 }
+#[cfg(feature="legacy_commands")]
 pub async fn unban(ctx: Context, msg: Message) -> Result<(), String>{
     if msg.is_private(){return Ok(())}
     // if the member doesn't have the Admin permission
@@ -60,6 +62,7 @@ pub async fn unban(ctx: Context, msg: Message) -> Result<(), String>{
     }
     Ok(())
 }
+#[cfg(feature="legacy_commands")]
 pub async fn ban(ctx: Context, msg: Message) -> Result<(), String>{
     if msg.is_private(){return Ok(())}
     // if the member doesn't have the Admin permission
@@ -89,6 +92,7 @@ pub async fn ban(ctx: Context, msg: Message) -> Result<(), String>{
     }
     Ok(())
 }
+#[cfg(feature="legacy_commands")]
 pub async fn prefix(mut ctx: Context, msg: Message) -> Result<(), String>{
     if msg.is_private(){return Ok(())}
     // if the member doesn't have the Admin permission
@@ -105,6 +109,7 @@ pub async fn prefix(mut ctx: Context, msg: Message) -> Result<(), String>{
     msg.channel_id.say(&ctx.http, format!("Successfully set prefix to `{}`", new_prefix)).await.map_err(stringify_error)?;
     Ok(())
 }
+#[cfg(feature="legacy_commands")]
 pub async fn delete(ctx: Context, msg: Message) -> Result<(), String>{
     if msg.is_private(){return Ok(())}
     // if the member doesn't have the manage messages permission
