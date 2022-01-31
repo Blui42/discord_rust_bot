@@ -63,6 +63,7 @@ impl EventHandler for Handler {
             "roll" => fun::roll_command(&command.data.options).await,
             "coin" => fun::coin_command().await,
             "id" => info::get_id_command(&command.data.options).await,
+            "ttt" => tic_tac_toe::command(command.data.options.as_slice(), &ctx, &command.user).await,
             _ => None
         };
         if let Some(a) = response {
@@ -134,6 +135,10 @@ async fn main(){
         }
 
         client_data.insert::<Config>(config);
+        #[cfg(feature="tic_tac_toe")]
+        client_data.insert::<tic_tac_toe::TicTacToeRunning>(Vec::with_capacity(3));
+        #[cfg(feature="tic_tac_toe")]
+        client_data.insert::<tic_tac_toe::TicTacToeQueue>(Vec::with_capacity(3));
     }
 
     let shard_manager = client.shard_manager.clone();
