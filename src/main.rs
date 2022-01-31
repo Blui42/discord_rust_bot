@@ -60,9 +60,9 @@ impl EventHandler for Handler {
         if let Interaction::ApplicationCommand(command) = interaction 
         {command}else{return};
         let response = match command.data.name.as_str() {
-            "roll" => fun::roll_command(&command.data.options).await,
+            "roll" => fun::roll_command(command.data.options.as_slice()).await,
             "coin" => fun::coin_command().await,
-            "id" => info::get_id_command(&command.data.options).await,
+            "id" => info::get_id_command(command.data.options.as_slice()).await,
             "ttt" => tic_tac_toe::command(command.data.options.as_slice(), &ctx, &command.user).await,
             _ => None
         };

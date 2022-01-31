@@ -1,6 +1,6 @@
 use crate::stringify_error;
 use serenity::{
-    model::{channel::Message, interactions},
+    model::{channel::Message, interactions::application_command::ApplicationCommandInteractionDataOption},
     prelude::*,
 };
 
@@ -38,7 +38,7 @@ pub async fn id(ctx: Context, msg: Message) -> Result<(), String>{
     Ok(())
 }
 #[cfg(feature="legacy_commands")]
-pub async fn get_id_command(options: &Vec::<interactions::application_command::ApplicationCommandInteractionDataOption>) -> Option<String>{
+pub async fn get_id_command(options: &[ApplicationCommandInteractionDataOption]) -> Option<String>{
     let target = options.get(0)?.value.as_ref()?.as_str()?;
     if !(target.starts_with('<') && target.ends_with('>')){
         return Some("That's not a valid target. Mention a user, role, channel, etc".to_string());

@@ -1,6 +1,6 @@
 use crate::stringify_error;
 use serenity::{
-    model::{channel::Message, interactions},
+    model::{channel::Message, interactions::application_command::ApplicationCommandInteractionDataOption},
     prelude::*,
 };
 use rand::{distributions::{Distribution, Uniform}, prelude::*};
@@ -49,7 +49,7 @@ fn roll_dice(rolls: u8, sides: u8) -> (u16, u8, u8, String) {
     }
     (total, min, max, summary)
 }
-pub async fn roll_command(options: &Vec::<interactions::application_command::ApplicationCommandInteractionDataOption>) -> Option<String> {
+pub async fn roll_command(options: &[ApplicationCommandInteractionDataOption]) -> Option<String> {
     let rolls: i64 = options.get(0)?.value.as_ref()?.as_i64()?;
     let sides: i64 = options.get(1)?.value.as_ref()?.as_i64()?;
     if rolls < 0 || sides < 0 {
