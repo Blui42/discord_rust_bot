@@ -9,111 +9,86 @@ use serenity::model::interactions::application_command::ApplicationCommandIntera
 
 
 pub async fn command(options: &[ApplicationCommandInteractionDataOption], ctx: &Context, user: &User) -> Option<String>{
-    println!("{:#?}", &options);
     match options.get(0)?.name.as_str() {
-        "start" => start_game(options, ctx, user).await,
+        "start" => start_game(options.get(0)?.options.as_slice(), ctx, user).await,
         _ => Some("Unknown Subcommand".to_string())
     }
 }
 
-pub async fn start_game(options: &[ApplicationCommandInteractionDataOption], ctx: &Context, user: &User) -> Option<String>{
-    println!("Start Game");
-    if let ApplicationCommandInteractionDataOptionValue::User(opponent, _) = options.get(0)?.resolved.as_ref()? {
-        {
-            println!("Search Running Games");
-            let data = ctx.data.read().await;
-            let current_games = data.get::<TicTacToeRunning>()?;
-            for game in current_games {
-                if let Some(oppnent) = game.opponent(user.id) {
-                    return Some(format!("You are already in a game against {}!", oppnent.to_user(&ctx.http).await.ok()?.tag()))
-                }
-                if game.has_player(opponent.id){
-                    return Some(format!("{} is already in a game!", user.tag()))
-                }
-            }
-        }
-        {
-            println!("Search Game Queue");
-            let data = ctx.data.read().await;
-            let game_queue = data.get::<TicTacToeQueue>()?;
-            for game in game_queue {
-                if game.player_2 == opponent.id && game.player_1 == user.id {
-                    return Some(format!("You have already requested a game against {}!", opponent.tag()))
-                }
-                if game.player_1 == opponent.id && game.player_2 == user.id {
-                    return accept_request(options, ctx, user).await;
-                }
-            }
-        }
-        let mut data = ctx.data.write().await;
-        let game_queue = data.get_mut::<TicTacToeQueue>()?;
-        game_queue.push(TicTacToe::new(user.id, opponent.id));
-    }
-    accept_any_request(options, ctx, user).await // The user didn't specify what game to start, use game queue to try and infer this.
-}
-
-pub async fn accept_any_request(options: &[ApplicationCommandInteractionDataOption], ctx: &Context, user: &User) -> Option<String>{
-    println!("Accept Any Request");
-    let mut data = ctx.data.write().await;
-    let mut game: Option<TicTacToe> = None;
-    // Check if there is a request and remove it from the queue
+pub async fn make_request(opponent: UserId, ctx: &Context, user: &User) -> Option<String>{
+    println!("Cool");
     {
-        let game_queue = data.get_mut::<TicTacToeQueue>()?;
-        for (index, _game) in game_queue.iter().enumerate() {
-            if _game.player_2 == user.id {
-                game = Some(game_queue.swap_remove(index));
-                break;
+        let data = ctx.data.read().await;
+        println!("LOCK");
+        let current_games = data.get::<TicTacToeRunning>()?;
+        println!("CURRENT");
+        for game in current_games {
+            if let Some(oppnent) = game.opponent(user.id) {
+                println!("Schon in nem Spiel");
+                return Some(format!("You are already in a game against {}!", oppnent.to_user(&ctx.http).await.ok()?.tag()))
+            }
+            if game.has_player(opponent){
+                return Some(format!("{} is already in a game!", user.tag()))
+            }
+        }
+        let game_queue = data.get::<TicTacToeQueue>()?;
+        println!("QUEUE");
+        for game in game_queue {
+            if game.player_2 == opponent && game.player_1 == user.id {
+                return Some(format!("You have already requested a game against {}!", opponent.to_user(&ctx.http).await.ok()?.tag()));
             }
         }
     }
-    if game.is_none() {return Some("You have no incoming requests".to_string())};
+    let mut data = ctx.data.write().await;
+    let game_queue = data.get_mut::<TicTacToeQueue>()?;
+    game_queue.push(TicTacToe::new(user.id, opponent));
+    Some(format!("You challanged {}!", opponent.mention()))
 
-    
-    let running_games = data.get_mut::<TicTacToeRunning>()?;
-    running_games.push(game?);
-    Some(format!("Game initiated! Use `/ttt set <1-9>` to play!"))
 }
 
-pub async fn accept_request(options: &[ApplicationCommandInteractionDataOption], ctx: &Context, user: &User) -> Option<String>{
-    println!("Accept Request");
 
+pub async fn start_game(options: &[ApplicationCommandInteractionDataOption], ctx: &Context, user: &User) -> Option<String>{
     // This will be Some(opponent) if the user spefified an opponent, otherwise None.
     let opponent = if let Some(a) = options.get(0) {
         if let ApplicationCommandInteractionDataOptionValue::User(opponent, _) = a.resolved.as_ref()? {
             Some(opponent.id)
         }else{return Some(format!("Something went wrong. Report the following in the Support Discord: ```In {}/{}: opponent was of incorrect type, expected User. More Info: \n{:#?}```", file!(), line!(), a.resolved))}
     }else{None};
+    println!("{:#?}", opponent);
 
 
     let mut data = ctx.data.write().await;
     let game_queue = data.get_mut::<TicTacToeQueue>()?;
     let index = find_game_index(&user.id, opponent.as_ref(),game_queue.as_slice()).await;
-    if index.is_none() {return Some("You have no incoming requests".to_string())};
+    if index.is_none() {
+        if let Some(opp) = opponent {
+            drop(data);
+            return make_request(opp, ctx, user).await;
+        }
+        else{
+            return Some("You have no incoming requests".to_string());
+        }
+    }
     let game = game_queue.swap_remove(index?);        
     let running_games = data.get_mut::<TicTacToeRunning>()?;
     running_games.push(game);
     return Some(format!("Game initiated! Use `/ttt set <1-9>` to play!"));
 }
 
-pub async fn find_game<'a>(user: &UserId, opponent: Option<&UserId>, games: &'a [TicTacToe]) ->  Option<&'a TicTacToe> {
+pub async fn find_game<'a>(host: &UserId, opponent: Option<&UserId>, games: &'a [TicTacToe]) ->  Option<&'a TicTacToe> {
     for game in games {
-        if game.player_2 == *user {
+        if game.player_2 == *host {
             if opponent.is_none()
             || game.player_1 == *opponent? {
                 return Some(game)
             } 
-            match opponent {
-                None => return Some(game),
-                Some(a) if *a == game.player_1 => return Some(game),
-                Some(_) => ()
-            }
         }
     }
     None
 }
-pub async fn find_game_index(user: &UserId, opponent: Option<&UserId>, games: &[TicTacToe]) ->  Option<usize> {
+pub async fn find_game_index(host: &UserId, opponent: Option<&UserId>, games: &[TicTacToe]) ->  Option<usize> {
     for (index, game) in games.iter().enumerate() {
-        if game.player_2 == *user {
+        if game.player_2 == *host {
             if opponent.is_none()
             || game.player_1 == *opponent? {
                 return Some(index)
