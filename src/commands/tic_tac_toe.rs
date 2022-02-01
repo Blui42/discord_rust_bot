@@ -16,6 +16,7 @@ pub async fn command(options: &[ApplicationCommandInteractionDataOption], ctx: &
     match options.get(0)?.name.as_str() {
         "start" => start_game(options.get(0)?.options.as_slice(), ctx, user).await,
         "set" => mark_field(options.get(0)?.options.as_slice(), ctx, user).await,
+        "cancel" => cancel_game(options.get(0)?.options.as_slice(), ctx, user).await,
         _ => Some("Unknown Subcommand".to_string())
     }
 }
@@ -47,6 +48,33 @@ pub async fn make_request(opponent: UserId, ctx: &Context, user: &User) -> Optio
 
 }
 
+pub async fn cancel_game(options: &[ApplicationCommandInteractionDataOption], ctx: &Context, user: &User) -> Option<String>{
+    // This will be Some(opponent) if the user spefified an opponent, otherwise None.
+    let opponent = if let Some(a) = options.get(0) {
+        if let ApplicationCommandInteractionDataOptionValue::User(opponent, _) = a.resolved.as_ref()? {
+            Some(&opponent.id)
+        }else{return Some(format!("Something went wrong. Report the following in the Support Discord: ```In {}/{}: opponent was of incorrect type, expected User. More Info: \n{:#?}```", file!(), line!(), a.resolved))}
+    }else{None};
+    {
+        let data = ctx.data.read().await;
+        let game_queue = data.get::<TicTacToeQueue>()?;
+        if let Some(index) = find_game_index2(&user.id, opponent, game_queue).await {
+            drop(data);
+            ctx.data.write().await.get_mut::<TicTacToeQueue>()?.swap_remove(index);
+            return Some("Cancelled game.".to_string())
+        }
+        
+        
+        let running_games = data.get::<TicTacToeRunning>()?;
+        if let Some(index) = find_game_index2(&user.id, opponent, running_games).await {
+            drop(data);
+            ctx.data.write().await.get_mut::<TicTacToeRunning>()?.swap_remove(index);
+            return Some("You gave up.".to_string())
+        }
+    }
+    return Some("There was no game to cancel".to_string());
+    
+}
 
 pub async fn start_game(options: &[ApplicationCommandInteractionDataOption], ctx: &Context, user: &User) -> Option<String>{
     // This will be Some(opponent) if the user spefified an opponent, otherwise None.
@@ -128,11 +156,24 @@ pub async fn find_game<'a>(host: &UserId, opponent: Option<&UserId>, games: &'a 
     }
     None
 }
-pub async fn find_game_index(host: &UserId, opponent: Option<&UserId>, games: &[TicTacToe]) ->  Option<usize> {
+pub async fn find_game_index(opponent: &UserId, host: Option<&UserId>, games: &[TicTacToe]) ->  Option<usize> {
     for (index, game) in games.iter().enumerate() {
-        if game.player_2 == *host {
+        if game.player_2 == *opponent {
+            if host.is_none()
+            || game.player_1 == *host? {
+                return Some(index)
+            } 
+
+        }
+    }
+    None
+}
+
+pub async fn find_game_index2(host: &UserId, opponent: Option<&UserId>, games: &[TicTacToe]) ->  Option<usize> {
+    for (index, game) in games.iter().enumerate() {
+        if game.player_1 == *host {
             if opponent.is_none()
-            || game.player_1 == *opponent? {
+            || game.player_2 == *opponent? {
                 return Some(index)
             } 
 

@@ -80,6 +80,18 @@ pub fn commands(commands: &mut CreateApplicationCommands) -> &mut CreateApplicat
                 .required(true)
             })
         })
+        .create_option(|option| {
+            option
+            .name("cancel")
+            .description("Cancel a upcoming or ongoing game")
+            .kind(ApplicationCommandOptionType::SubCommand)
+            .create_sub_option(|sub_option|{
+                sub_option
+                .name("opponent")
+                .description("The opponent of the game you want to cancel")
+                .kind(ApplicationCommandOptionType::User)
+            })
+        })
     })
 }
 #[cfg(feature="legacy_commands")]
