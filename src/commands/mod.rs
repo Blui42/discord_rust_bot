@@ -67,6 +67,19 @@ pub fn commands(commands: &mut CreateApplicationCommands) -> &mut CreateApplicat
                 .kind(ApplicationCommandOptionType::User)
             })
         })
+        .create_option(|option| {
+            option
+            .name("set")
+            .description("Set your marker on the playing field")
+            .kind(ApplicationCommandOptionType::SubCommand)
+            .create_sub_option(|sub_option|{
+                sub_option
+                .name("field")
+                .description("Should be from 1-9")
+                .kind(ApplicationCommandOptionType::Integer)
+                .required(true)
+            })
+        })
     })
 }
 #[cfg(feature="legacy_commands")]
