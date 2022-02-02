@@ -104,19 +104,12 @@ pub async fn start_game(options: &[ApplicationCommandInteractionDataOption], ctx
 pub async fn mark_field(options: &[ApplicationCommandInteractionDataOption], ctx: &Context, user: &User) -> Option<String>{
     let data = ctx.data.read().await;
     let mut games = data.get::<TicTacToeRunning>()?.write().await;
-    let mut index = 0;
-    let mut game = None;
-    for (i, _game) in games.iter_mut().enumerate() {
-        if _game.has_player(user.id) {
-            game = Some(_game);
-            index = i;
-            break;
-        }
-    }
-    if game.is_none() {
+
+    let (index, game) = if let Some(a) = games.iter_mut().enumerate().find(|(_, game)| {game.has_player(user.id)}){
+        a
+    }else{
         return Some("You don't have a running game!".to_string())
-    }
-    let game = game?;
+    };
     let field_number: u8 = if let Some(a) = validate_field_number(options.get(0)?.value.as_ref()?.as_i64()?) {
         a
     } else {
@@ -285,7 +278,7 @@ impl TicTacToe {
         return Ok(());
     }
 
-    pub fn get(&mut self, field: u8) -> Option<u8>{
+    pub fn get(&self, field: u8) -> Option<u8>{
         if field > 9 || field == 0 {
             return None
         }
