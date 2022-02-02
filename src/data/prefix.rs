@@ -1,6 +1,7 @@
 use std::fs;
 use serde_json::{self, Map, Value};
 use serenity::{client::Context, model::channel::Message};
+use tokio::sync::RwLock;
 
 
 pub struct Prefix{
@@ -47,7 +48,7 @@ impl Drop for Prefix{
 }
 
 impl serenity::prelude::TypeMapKey for Prefix {
-    type Value = Self;
+    type Value = RwLock<Self>;
 }
 
 pub async fn get_prefix(msg: &Message, ctx: &Context) -> Option<String>{
@@ -57,11 +58,13 @@ pub async fn get_prefix(msg: &Message, ctx: &Context) -> Option<String>{
     return ctx.data
         .read().await
         .get::<crate::Prefix>()?
+        .read().await
         .get(msg.guild_id?.0);
 }
 pub async fn set_prefix(msg: &Message, ctx: &mut Context, new_prefix: &str){
     // get mutable prefix variable
-    if let Some(prefix) = ctx.data.write().await.get_mut::<crate::Prefix>(){
+    if let Some(prefix_lock) = ctx.data.read().await.get::<crate::Prefix>(){
+        let mut prefix = prefix_lock.write().await;
         if let Some(a) = msg.guild_id {
             prefix.set(a.0, new_prefix);
             return;

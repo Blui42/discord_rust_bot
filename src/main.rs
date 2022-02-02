@@ -1,7 +1,7 @@
 mod commands;
 mod data;
 use commands::*;
-use tokio::time::{sleep, Duration};
+use tokio::{time::{sleep, Duration}, sync::RwLock};
 use std::env;
 use dotenv::dotenv;
 use serenity::{
@@ -126,19 +126,19 @@ async fn main(){
     {
         let mut client_data = client.data.write().await;
         let data = Data::new();
-        client_data.insert::<Data>(data);
+        client_data.insert::<Data>(RwLock::new(data));
 
         #[cfg(feature="custom_prefix")]
         {
             let prefix = Prefix::new("prefix.json".to_string());
-            client_data.insert::<Prefix>(prefix);
+            client_data.insert::<Prefix>(RwLock::new(prefix));
         }
 
         client_data.insert::<Config>(config);
         #[cfg(feature="tic_tac_toe")]
-        client_data.insert::<tic_tac_toe::TicTacToeRunning>(Vec::with_capacity(3));
+        client_data.insert::<tic_tac_toe::TicTacToeRunning>(RwLock::new(Vec::with_capacity(3)));
         #[cfg(feature="tic_tac_toe")]
-        client_data.insert::<tic_tac_toe::TicTacToeQueue>(Vec::with_capacity(3));
+        client_data.insert::<tic_tac_toe::TicTacToeQueue>(RwLock::new(Vec::with_capacity(3)));
     }
 
     let shard_manager = client.shard_manager.clone();
@@ -157,13 +157,13 @@ async fn main(){
             sleep(Duration::from_secs(600)).await;
             println!("Preparing to save...");
             if let Some(readable_data) = client_data.read().await.get::<Data>(){
-                readable_data.save();
+                readable_data.read().await.save();
             }else{
                 eprintln!("Data to save was not accessible");
             }
             #[cfg(feature="custom_prefix")]
             if let Some(prefix) = client_data.read().await.get::<Prefix>(){
-                prefix.save();
+                prefix.read().await.save();
             }else{
                 eprintln!("Data to save was not accessible");
             }

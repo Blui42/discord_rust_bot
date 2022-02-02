@@ -7,6 +7,7 @@ pub mod config;
 
 use rand::{Rng, SeedableRng, rngs::SmallRng};
 use serenity::{client::Context, model::channel::Message};
+use tokio::sync::RwLock;
 
 pub struct Data {
     #[cfg(feature="xp")]
@@ -39,7 +40,7 @@ impl Data {
 }
 
 impl serenity::prelude::TypeMapKey for Data {
-    type Value = Self;
+    type Value = RwLock<Self>;
 }
 
 
@@ -48,7 +49,8 @@ impl serenity::prelude::TypeMapKey for Data {
 // give the user cookies and xp
 pub async fn reward_user(msg: &Message, ctx: &mut Context){
     let author_id = msg.author.id.0;
-    if let Some(data) = ctx.data.write().await.get_mut::<Data>(){
+    if let Some(data_lock) = ctx.data.read().await.get::<Data>(){
+        let mut data = data_lock.write().await;
         let mut rng = SmallRng::from_entropy();
         
         #[cfg(feature="cookies")]

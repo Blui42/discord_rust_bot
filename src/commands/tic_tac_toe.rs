@@ -1,15 +1,19 @@
 #![cfg(feature="tic_tac_toe")]
 
 
+
 use serenity::{
     model::{
-        interactions::application_command::ApplicationCommandInteractionDataOption, 
+        interactions::application_command::{
+            ApplicationCommandInteractionDataOptionValue,
+            ApplicationCommandInteractionDataOption
+        },
         id::UserId, 
-        prelude:: *
+        prelude::*
     },
-    prelude::*,
+    prelude::*
 };
-use serenity::model::interactions::application_command::ApplicationCommandInteractionDataOptionValue;
+use tokio::sync::RwLock;
 
 
 pub async fn command(options: &[ApplicationCommandInteractionDataOption], ctx: &Context, user: &User) -> Option<String>{
@@ -22,27 +26,24 @@ pub async fn command(options: &[ApplicationCommandInteractionDataOption], ctx: &
 }
 
 pub async fn make_request(opponent: UserId, ctx: &Context, user: &User) -> Option<String>{
-    {
-        let data = ctx.data.read().await;
-        let current_games = data.get::<TicTacToeRunning>()?;
-        for game in current_games {
-            if let Some(oppnent) = game.opponent(user.id) {
-                println!("Schon in nem Spiel");
-                return Some(format!("You are already in a game against {}!", oppnent.to_user(&ctx.http).await.ok()?.tag()))
-            }
-            if game.has_player(opponent){
-                return Some(format!("{} is already in a game!", user.tag()))
-            }
+    let data = ctx.data.read().await;
+    let current_games = data.get::<TicTacToeRunning>()?.read().await;
+    for game in current_games.iter() {
+        if let Some(oppnent) = game.opponent(user.id) {
+            println!("Schon in nem Spiel");
+            return Some(format!("You are already in a game against {}!", oppnent.to_user(&ctx.http).await.ok()?.tag()))
         }
-        let game_queue = data.get::<TicTacToeQueue>()?;
-        for game in game_queue {
-            if game.player_2 == opponent && game.player_1 == user.id {
-                return Some(format!("You have already requested a game against {}!", opponent.to_user(&ctx.http).await.ok()?.tag()));
-            }
+        if game.has_player(opponent){
+            return Some(format!("{} is already in a game!", user.tag()))
         }
     }
-    let mut data = ctx.data.write().await;
-    let game_queue = data.get_mut::<TicTacToeQueue>()?;
+    let game_queue = data.get::<TicTacToeQueue>()?.read().await;
+    for game in game_queue.iter() {
+        if game.player_2 == opponent && game.player_1 == user.id {
+            return Some(format!("You have already requested a game against {}!", opponent.to_user(&ctx.http).await.ok()?.tag()));
+        }
+    }
+    let mut game_queue = data.get::<TicTacToeQueue>()?.write().await;
     game_queue.push(TicTacToe::new(user.id, opponent));
     Some(format!("You challanged {}!", opponent.mention()))
 
@@ -55,22 +56,19 @@ pub async fn cancel_game(options: &[ApplicationCommandInteractionDataOption], ct
             Some(&opponent.id)
         }else{return Some(format!("Something went wrong. Report the following in the Support Discord: ```In {}/{}: opponent was of incorrect type, expected User. More Info: \n{:#?}```", file!(), line!(), a.resolved))}
     }else{None};
-    {
-        let data = ctx.data.read().await;
-        let game_queue = data.get::<TicTacToeQueue>()?;
-        if let Some(index) = find_game_index2(&user.id, opponent, game_queue).await {
-            drop(data);
-            ctx.data.write().await.get_mut::<TicTacToeQueue>()?.swap_remove(index);
-            return Some("Cancelled game.".to_string())
-        }
-        
-        
-        let running_games = data.get::<TicTacToeRunning>()?;
-        if let Some(index) = find_game_index2(&user.id, opponent, running_games).await {
-            drop(data);
-            ctx.data.write().await.get_mut::<TicTacToeRunning>()?.swap_remove(index);
-            return Some("You gave up.".to_string())
-        }
+
+    let data = ctx.data.read().await;
+    let game_queue = data.get::<TicTacToeQueue>()?.read().await;
+    if let Some(index) = find_game_index2(&user.id, opponent, game_queue.as_slice()).await {
+        data.get::<TicTacToeQueue>()?.write().await.swap_remove(index);
+        return Some("Cancelled game.".to_string())
+    }
+    
+    
+    let running_games = data.get::<TicTacToeRunning>()?.read().await;
+    if let Some(index) = find_game_index2(&user.id, opponent, running_games.as_slice()).await {
+        data.get::<TicTacToeRunning>()?.write().await.swap_remove(index);
+        return Some("You gave up.".to_string())
     }
     return Some("There was no game to cancel".to_string());
     
@@ -86,12 +84,11 @@ pub async fn start_game(options: &[ApplicationCommandInteractionDataOption], ctx
     println!("{:#?}", opponent);
 
 
-    let mut data = ctx.data.write().await;
-    let game_queue = data.get_mut::<TicTacToeQueue>()?;
+    let data = ctx.data.read().await;
+    let mut game_queue = data.get::<TicTacToeQueue>()?.write().await;
     let index = find_game_index(&user.id, opponent.as_ref(),game_queue.as_slice()).await;
     if index.is_none() {
         if let Some(opp) = opponent {
-            drop(data);
             return make_request(opp, ctx, user).await;
         }
         else{
@@ -99,14 +96,14 @@ pub async fn start_game(options: &[ApplicationCommandInteractionDataOption], ctx
         }
     }
     let game = game_queue.swap_remove(index?);        
-    let running_games = data.get_mut::<TicTacToeRunning>()?;
+    let mut running_games = data.get::<TicTacToeRunning>()?.write().await;
     running_games.push(game);
     return Some(format!("Game initiated! Use `/ttt set <1-9>` to play!"));
 }
 
 pub async fn mark_field(options: &[ApplicationCommandInteractionDataOption], ctx: &Context, user: &User) -> Option<String>{
-    let mut data = ctx.data.write().await;
-    let games = data.get_mut::<TicTacToeRunning>()?;
+    let data = ctx.data.read().await;
+    let mut games = data.get::<TicTacToeRunning>()?.write().await;
     let mut index = 0;
     let mut game = None;
     for (i, _game) in games.iter_mut().enumerate() {
@@ -326,10 +323,10 @@ impl TicTacToe {
 pub struct TicTacToeRunning;
 impl TypeMapKey for TicTacToeRunning{
 
-    type Value = Vec<TicTacToe>; 
+    type Value = RwLock<Vec<TicTacToe>>; 
 }
 pub struct TicTacToeQueue;
 impl TypeMapKey for TicTacToeQueue{
 
-    type Value = Vec<TicTacToe>; 
+    type Value = RwLock<Vec<TicTacToe>>; 
 }
