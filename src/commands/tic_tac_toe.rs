@@ -326,7 +326,7 @@ impl Display for TicTacToe {
                         _ => write!(f, ":interrobang:")?,
                     }
                 }
-                write!(f, "\n")?
+                writeln!(f)?
             }
         } else {
             for row in self.field.iter() {
@@ -338,7 +338,7 @@ impl Display for TicTacToe {
                         _ => write!(f, ":interrobang:")?,
                     };
                 }
-                write!(f, "\n")?
+                writeln!(f)?
             }
         }
         Ok(())
