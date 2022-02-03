@@ -33,7 +33,6 @@ pub async fn make_request(opponent: UserId, ctx: &Context, user: &User) -> Optio
     let current_games = data.get::<TicTacToeRunning>()?.read().await;
     for game in current_games.iter() {
         if let Some(oppnent) = game.opponent(user.id) {
-            println!("Schon in nem Spiel");
             return Some(format!("You are already in a game against {}!", oppnent.to_user(&ctx.http).await.ok()?.tag()))
         }
         if game.has_player(opponent){
