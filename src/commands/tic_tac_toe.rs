@@ -26,6 +26,9 @@ pub async fn command(options: &[ApplicationCommandInteractionDataOption], ctx: &
 }
 
 pub async fn make_request(opponent: UserId, ctx: &Context, user: &User) -> Option<String>{
+    if opponent == user.id {
+        return Some("That would be kind of sad".to_string())
+    }
     let data = ctx.data.read().await;
     let current_games = data.get::<TicTacToeRunning>()?.read().await;
     for game in current_games.iter() {
@@ -116,7 +119,7 @@ pub async fn mark_field(options: &[ApplicationCommandInteractionDataOption], ctx
         return Some("That's an invalid field number!".to_string())
     };
     if game.get(field_number)? == 0 {
-        let player = if game.player_1 == user.id {1} else {2};
+        let player = game.player_number(user.id);
         if game.previous_player == player {
             return Some("It's not your turn!".to_string())
         }
@@ -202,6 +205,16 @@ impl TicTacToe {
     pub fn has_player(&self, player: UserId) -> bool {
         return player.0 == self.player_1.0
             || player.0 == self.player_2.0
+    }
+
+    pub fn player_number(&self, player: UserId) -> u8 {
+        if player == self.player_1 {
+            1
+        } else if player == self.player_2 {
+            2
+        } else {
+            0
+        }
     }
 
     pub fn opponent(&self, player: UserId) -> Option<UserId> {
