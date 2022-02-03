@@ -59,7 +59,6 @@ pub async fn reward_user(msg: &Message, ctx: &mut Context) {
             data.level.add_xp(&author_id, &0, xp); // global xp
             if let Some(a) = msg.guild_id {
                 data.level.add_xp(&author_id, &a.0, xp); // guild-specific xp
-                return;
             }
         }
     }

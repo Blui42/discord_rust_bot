@@ -93,7 +93,7 @@ pub async fn cancel_game(
             .swap_remove(index);
         return Some("You gave up.".to_string());
     }
-    return Some("There was no game to cancel".to_string());
+    Some("There was no game to cancel".to_string())
 }
 
 pub async fn start_game(
@@ -128,7 +128,7 @@ pub async fn start_game(
     let game = game_queue.swap_remove(index?);
     let mut running_games = data.get::<TicTacToeRunning>()?.write().await;
     running_games.push(game);
-    return Some(format!("Game initiated! Use `/ttt set <1-9>` to play!"));
+    Some("Game initiated! Use `/ttt set <1-9>` to play!".to_string())
 }
 
 pub async fn mark_field(
@@ -181,10 +181,8 @@ pub async fn find_game<'a>(
     games: &'a [TicTacToe],
 ) -> Option<&'a TicTacToe> {
     for game in games {
-        if game.player_2 == *host {
-            if opponent.is_none() || game.player_1 == *opponent? {
-                return Some(game);
-            }
+        if game.player_2 == *host && (opponent.is_none() || game.player_1 == *opponent?) {
+            return Some(game);
         }
     }
     None
@@ -195,10 +193,8 @@ pub async fn find_game_index(
     games: &[TicTacToe],
 ) -> Option<usize> {
     for (index, game) in games.iter().enumerate() {
-        if game.player_2 == *opponent {
-            if host.is_none() || game.player_1 == *host? {
-                return Some(index);
-            }
+        if game.player_2 == *opponent && (host.is_none() || game.player_1 == *host?) {
+            return Some(index);
         }
     }
     None
@@ -210,10 +206,8 @@ pub async fn find_game_index2(
     games: &[TicTacToe],
 ) -> Option<usize> {
     for (index, game) in games.iter().enumerate() {
-        if game.player_1 == *host {
-            if opponent.is_none() || game.player_2 == *opponent? {
-                return Some(index);
-            }
+        if game.player_1 == *host && (opponent.is_none() || game.player_2 == *opponent?) {
+            return Some(index);
         }
     }
     None
@@ -237,16 +231,16 @@ pub struct TicTacToe {
 
 impl TicTacToe {
     pub fn new(player_1: UserId, player_2: UserId) -> Self {
-        return Self {
+        Self {
             field: [[0; 3]; 3],
             player_1,
             player_2,
             previous_player: 0,
-        };
+        }
     }
 
     pub fn has_player(&self, player: UserId) -> bool {
-        return player.0 == self.player_1.0 || player.0 == self.player_2.0;
+        player.0 == self.player_1.0 || player.0 == self.player_2.0
     }
 
     pub fn player_number(&self, player: UserId) -> u8 {
@@ -318,7 +312,7 @@ impl TicTacToe {
         if rows != 0 {
             return rows;
         }
-        return self.check_diagonal();
+        self.check_diagonal()
     }
 
     pub fn insert(&mut self, player: u8, field: u8) -> Result<(), String> {
@@ -328,20 +322,20 @@ impl TicTacToe {
         if field <= 3 {
             *self.field[0]
                 .get_mut((field - 1) as usize)
-                .ok_or("Logikfehler lol".to_string())? = player;
+                .ok_or_else(|| "Logikfehler lol".to_string())? = player;
             return Ok(());
         }
         if field <= 6 {
             *self.field[1]
                 .get_mut((field - 4) as usize)
-                .ok_or("Logikfehler lol".to_string())? = player;
+                .ok_or_else(|| "Logikfehler lol".to_string())? = player;
             return Ok(());
         }
 
         *self.field[2]
             .get_mut((field - 7) as usize)
-            .ok_or("Logikfehler lol".to_string())? = player;
-        return Ok(());
+            .ok_or_else(|| "Logikfehler lol".to_string())? = player;
+        Ok(())
     }
 
     pub fn get(&self, field: u8) -> Option<u8> {

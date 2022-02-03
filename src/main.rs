@@ -83,6 +83,7 @@ impl EventHandler for Handler {
                 eprintln!("An Error occured: {}", why)
             }
         } else {
+            #[allow(clippy::collapsible_else_if)]
             if let Err(why) = command
                 .create_interaction_response(&ctx.http, |response| {
                     response

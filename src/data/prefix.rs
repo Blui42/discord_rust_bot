@@ -77,7 +77,6 @@ pub async fn set_prefix(msg: &Message, ctx: &mut Context, new_prefix: &str) {
         let mut prefix = prefix_lock.write().await;
         if let Some(a) = msg.guild_id {
             prefix.set(a.0, new_prefix);
-            return;
         }
     }
 }
