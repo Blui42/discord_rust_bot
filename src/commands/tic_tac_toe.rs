@@ -2,6 +2,11 @@
 
 
 
+use std::fmt::{
+    Display,
+    Formatter,
+    Result as FmtResult
+};
 use serenity::{
     model::{
         interactions::application_command::{
@@ -128,11 +133,10 @@ pub async fn mark_field(options: &[ApplicationCommandInteractionDataOption], ctx
     
     let winner = game.check_all();
     if winner == 0 {
-        Some(format!("{}", game.formatted_field()))
-
+        Some(format!("{:#}", game))
     }else{
         let game = games.swap_remove(index);
-        Some(format!("Player {} has won!\nPlaying field: \n{}", winner, game.formatted_field()))
+        Some(format!("Player {} has won!\nPlaying field: \n{}", winner, game))
     }
 }
 
@@ -303,25 +307,41 @@ impl TicTacToe {
         return Some(*self.field[2].get((field-7) as usize)?);
     }
 
-    pub fn formatted_field(&self) -> String {
-        const NUMBER_FIELD: [[&str;3];3] = [
-            [":one:", ":two:", ":three:"],
-            [":four:", ":five:", ":six:"],
-            [":seven:", ":eight:", ":nine:"]
-        ];
-        let mut ret = String::new();
-        for (row, nr) in self.field.iter().zip(NUMBER_FIELD.iter()){
-            for (element, nr) in row.iter().zip(nr.iter()) {
-                match element {
-                    0 => ret += nr,
-                    1 => ret += ":negative_squared_cross_mark:",
-                    2 => ret += ":o2:",
-                    _ => ret += ":interrobang:"
+}
+
+impl Display for TicTacToe {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        if f.alternate() {
+            const NUMBER_FIELD: [[&str;3];3] = [
+                [":one:", ":two:", ":three:"],
+                [":four:", ":five:", ":six:"],
+                [":seven:", ":eight:", ":nine:"]
+            ];
+            for (row, nr) in self.field.iter().zip(NUMBER_FIELD.iter()){
+                for (element, nr) in row.iter().zip(nr.iter()) {
+                    match element {
+                        0 => write!(f, "{}", nr)?,
+                        1 => write!(f, ":negative_squared_cross_mark:")?,
+                        2 => write!(f, ":o2:")?,
+                        _ => write!(f, ":interrobang:")?,
+                    }
                 }
+                write!(f, "\n")?
             }
-            ret += "\n"
+        } else {
+            for row in self.field.iter() {
+                for element in row.iter() {
+                    match element {
+                        0 => write!(f, ":blue_square:")?,
+                        1 => write!(f, ":negative_squared_cross_mark:")?,
+                        2 => write!(f, ":o2:")?,
+                        _ => write!(f, ":interrobang:")?,
+                    };
+                }
+                write!(f, "\n")?
+            }
         }
-        ret
+        Ok(())
     }
 }
 
