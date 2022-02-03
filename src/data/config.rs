@@ -1,6 +1,6 @@
 #![allow(dead_code)]
-use std::fs;
 use serde::Deserialize;
+use std::fs;
 extern crate toml;
 
 #[derive(Deserialize, Debug)]
@@ -27,15 +27,15 @@ impl serenity::prelude::TypeMapKey for Config {
 
 impl Default for Config {
     fn default() -> Self {
-        Self { 
-            application_id: None, 
-            home_server: None, 
-            home_channel: None, 
-            owners: Box::new([]), 
-            legacy_commands: true, 
-            respond_dm: true, 
-            respond_server: true, 
-            commands_home_only: false 
+        Self {
+            application_id: None,
+            home_server: None,
+            home_channel: None,
+            owners: Box::new([]),
+            legacy_commands: true,
+            respond_dm: true,
+            respond_server: true,
+            commands_home_only: false,
         }
     }
 }
