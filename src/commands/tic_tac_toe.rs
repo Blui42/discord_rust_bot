@@ -117,18 +117,16 @@ pub async fn start_game(
 
     let data = ctx.data.read().await;
     let mut game_queue = data.get::<TicTacToeQueue>()?.write().await;
-    let index = find_game_index(&user.id, opponent.as_ref(), game_queue.as_slice()).await;
-    if index.is_none() {
-        if let Some(opp) = opponent {
-            return make_request(opp, ctx, user).await;
-        } else {
-            return Some("You have no incoming requests".to_string());
-        }
+    if let Some(index) = find_game_index(&user.id, opponent.as_ref(), game_queue.as_slice()).await {
+        let game = game_queue.swap_remove(index);
+        let mut running_games = data.get::<TicTacToeRunning>()?.write().await;
+        running_games.push(game);
+        Some("Game initiated! Use `/ttt set <1-9>` to play!".to_string())
+    } else if let Some(opp) = opponent {
+        make_request(opp, ctx, user).await
+    } else {
+        Some("You have no incoming requests".to_string())
     }
-    let game = game_queue.swap_remove(index?);
-    let mut running_games = data.get::<TicTacToeRunning>()?.write().await;
-    running_games.push(game);
-    Some("Game initiated! Use `/ttt set <1-9>` to play!".to_string())
 }
 
 pub async fn mark_field(
