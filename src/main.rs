@@ -113,7 +113,7 @@ async fn main() {
     intent.set(GatewayIntents::DIRECT_MESSAGES, true);
 
     let token = env::var("DISCORD_TOKEN") // load DISCORD_TOKEN from enviroment
-        .expect("Expected a token in the enviroment"); // panic if not present
+        .expect("Put DISCORD_TOKEN=YourTokenHere into the .env file or add a DISCORD_TOKEN variable to the enviroment"); // panic if not present
 
     let config = data::config::Config::from_file("config.toml").unwrap_or_default();
 
