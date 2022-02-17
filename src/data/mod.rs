@@ -5,7 +5,7 @@ pub mod cookies;
 pub mod level;
 pub mod prefix;
 
-use rand::{rngs::SmallRng, Rng, SeedableRng};
+use rand::{thread_rng, Rng};
 use serenity::{client::Context, model::channel::Message};
 use tokio::sync::RwLock;
 
@@ -48,7 +48,7 @@ pub async fn reward_user(msg: &Message, ctx: &mut Context) {
     let author_id = msg.author.id.0;
     if let Some(data_lock) = ctx.data.read().await.get::<Data>() {
         let mut data = data_lock.write().await;
-        let mut rng = SmallRng::from_entropy();
+        let mut rng = thread_rng();
 
         #[cfg(feature = "cookies")]
         data.cookies.give(&author_id, rng.gen_range(0..2));
