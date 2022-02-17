@@ -139,14 +139,11 @@ async fn main() {
         let mut client_data = client.data.write().await;
         let data = Data::new();
         client_data.insert::<Data>(RwLock::new(data));
+        client_data.insert::<Config>(config);
 
         #[cfg(feature = "custom_prefix")]
-        {
-            let prefix = Prefix::new("prefix.json".to_string());
-            client_data.insert::<Prefix>(RwLock::new(prefix));
-        }
+        client_data.insert::<Prefix>(RwLock::new(Prefix::new("prefix.json".to_string())));
 
-        client_data.insert::<Config>(config);
         #[cfg(feature = "tic_tac_toe")]
         client_data.insert::<tic_tac_toe::TicTacToeRunning>(RwLock::new(Vec::with_capacity(3)));
         #[cfg(feature = "tic_tac_toe")]
