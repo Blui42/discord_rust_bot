@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 #![cfg(feature = "cookies")]
 
 use serde_json::{self, Map, Value};

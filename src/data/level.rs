@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 #![cfg(feature = "xp")]
 use serde::{Deserialize, Serialize};
 use serde_json::{self, Map, Value};
