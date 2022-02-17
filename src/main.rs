@@ -171,17 +171,23 @@ async fn main() {
         tokio::spawn(async move {
             sleep(Duration::from_secs(600)).await;
             println!("Preparing to save...");
-            if let Some(readable_data) = client_data.read().await.get::<Data>() {
-                readable_data.read().await.save();
-            } else {
-                eprintln!("Data to save was not accessible");
-            }
-            #[cfg(feature = "custom_prefix")]
-            if let Some(prefix) = client_data.read().await.get::<Prefix>() {
-                prefix.read().await.save();
-            } else {
-                eprintln!("Data to save was not accessible");
-            }
+            tokio::join!(
+                async {
+                    if let Some(readable_data) = client_data.read().await.get::<Data>() {
+                        readable_data.read().await.save();
+                    } else {
+                        eprintln!("Data to save was not accessible");
+                    }
+                },
+                #[cfg(feature = "custom_prefix")]
+                async {
+                    if let Some(prefix) = client_data.read().await.get::<Prefix>() {
+                        prefix.read().await.save();
+                    } else {
+                        eprintln!("Data to save was not accessible");
+                    }
+                }
+            )
         });
     }
 
