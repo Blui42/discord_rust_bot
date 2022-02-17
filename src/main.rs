@@ -107,11 +107,6 @@ impl EventHandler for Handler {
 async fn main() {
     dotenv().ok(); // place variables from .env into this enviroment
 
-    // Only recieve messages
-    let mut intent = GatewayIntents::empty();
-    intent.set(GatewayIntents::GUILD_MESSAGES, true);
-    intent.set(GatewayIntents::DIRECT_MESSAGES, true);
-
     let token = env::var("DISCORD_TOKEN") // load DISCORD_TOKEN from enviroment
         .expect("Put DISCORD_TOKEN=YourTokenHere into the .env file or add a DISCORD_TOKEN variable to the enviroment"); // panic if not present
 
@@ -130,7 +125,11 @@ async fn main() {
     };
     // create client
     let mut client: Client = Client::builder(&token)
-        .intents(intent)
+        .intents(
+            GatewayIntents::GUILD_MESSAGES
+                | GatewayIntents::DIRECT_MESSAGES
+                | GatewayIntents::GUILD_BANS,
+        )
         .application_id(application_id)
         .event_handler(Handler)
         .await
