@@ -173,18 +173,6 @@ pub async fn mark_field(
     }
 }
 
-pub async fn find_game<'a>(
-    host: &UserId,
-    opponent: Option<&UserId>,
-    games: &'a [TicTacToe],
-) -> Option<&'a TicTacToe> {
-    for game in games {
-        if game.player_2 == *host && (opponent.is_none() || game.player_1 == *opponent?) {
-            return Some(game);
-        }
-    }
-    None
-}
 pub async fn find_game_index(
     opponent: &UserId,
     host: Option<&UserId>,
