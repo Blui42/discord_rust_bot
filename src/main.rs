@@ -41,12 +41,16 @@ impl EventHandler for Handler {
 
         // get the prefix for the current guild
         #[cfg(feature = "custom_prefix")]
-        let prefix: String = match data::prefix::get_prefix(&msg, &ctx).await {
-            Some(a) => a,
-            None => {
-                data::prefix::set_prefix(&msg, &ctx, "!").await;
-                "!".to_string()
+        let prefix = if let Some(guild_id) = msg.guild_id {
+            match data::prefix::get_prefix(&msg, &ctx).await {
+                Some(a) => a,
+                None => {
+                    data::prefix::set_prefix(&guild_id, &ctx, "!").await;
+                    "!".to_string()
+                }
             }
+        } else {
+            "!".to_string()
         };
         #[cfg(not(feature = "custom_prefix"))]
         let prefix: String = "!";

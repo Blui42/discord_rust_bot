@@ -180,9 +180,12 @@ pub async fn ban(ctx: Context, msg: Message) -> Result<(), String> {
 }
 #[cfg(feature = "legacy_commands")]
 pub async fn prefix(ctx: Context, msg: Message) -> Result<(), String> {
-    if msg.is_private() {
+    let guild = if let Some(a) = msg.guild_id {
+        a
+    } else {
+        // Ignore Private Messages
         return Ok(());
-    }
+    };
     // if the member doesn't have the Admin permission
     if !msg
         .member(&ctx.http)
@@ -210,7 +213,7 @@ pub async fn prefix(ctx: Context, msg: Message) -> Result<(), String> {
             .map_err(stringify_error)?;
         return Ok(());
     }
-    set_prefix(&msg, &ctx, &new_prefix).await;
+    set_prefix(&guild, &ctx, &new_prefix).await;
     msg.channel_id
         .say(
             &ctx.http,
