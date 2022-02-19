@@ -157,7 +157,7 @@ pub async fn mark_field(
         if game.previous_player == player {
             return Some("It's not your turn!".to_string());
         }
-        game.insert(player, field_number).ok()?;
+        game.insert(player, field_number)?;
         game.previous_player = player;
     }
 
@@ -301,27 +301,25 @@ impl TicTacToe {
         self.check_diagonal()
     }
 
-    pub fn insert(&mut self, player: u8, field: u8) -> Result<(), String> {
+    /// Insert a number into the field.
+    /// ## Return
+    /// Returns `Some(())` on Success and `None` on Failure
+    pub fn insert(&mut self, player: u8, field: u8) -> Option<()> {
+        // Check that field is in bounds
         if field > 9 || field == 0 {
-            return Err("Not a field".to_string());
-        }
-        if field <= 3 {
-            *self.field[0]
-                .get_mut((field - 1) as usize)
-                .ok_or_else(|| "Logikfehler lol".to_string())? = player;
-            return Ok(());
-        }
-        if field <= 6 {
-            *self.field[1]
-                .get_mut((field - 4) as usize)
-                .ok_or_else(|| "Logikfehler lol".to_string())? = player;
-            return Ok(());
+            return None;
         }
 
-        *self.field[2]
-            .get_mut((field - 7) as usize)
-            .ok_or_else(|| "Logikfehler lol".to_string())? = player;
-        Ok(())
+        if field <= 3 {
+            self.field[0][(field - 1) as usize] = player;
+            return Some(());
+        }
+        if field <= 6 {
+            self.field[0][(field - 4) as usize] = player;
+            return Some(());
+        }
+        self.field[0][(field - 7) as usize] = player;
+        Some(())
     }
 
     pub fn get(&self, field: u8) -> Option<u8> {
