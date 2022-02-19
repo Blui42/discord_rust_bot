@@ -23,7 +23,7 @@ struct Handler;
 
 #[serenity::async_trait]
 impl EventHandler for Handler {
-    async fn message(&self, mut ctx: Context, msg: Message) {
+    async fn message(&self, ctx: Context, msg: Message) {
         // ignore messages from bots
         if msg.author.bot {
             return;
@@ -44,14 +44,14 @@ impl EventHandler for Handler {
         let prefix: String = match data::prefix::get_prefix(&msg, &ctx).await {
             Some(a) => a,
             None => {
-                data::prefix::set_prefix(&msg, &mut ctx, "!").await;
+                data::prefix::set_prefix(&msg, &ctx, "!").await;
                 "!".to_string()
             }
         };
         #[cfg(not(feature = "custom_prefix"))]
         let prefix: String = "!";
         // gives xp and cookies to user
-        data::reward_user(&msg, &mut ctx).await;
+        data::reward_user(&msg, &ctx).await;
 
         #[cfg(feature = "legacy_commands")]
         commands::parse_command(&prefix, msg, ctx).await;

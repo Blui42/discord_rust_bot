@@ -71,7 +71,7 @@ pub async fn get_prefix(msg: &Message, ctx: &Context) -> Option<String> {
         .await
         .get(msg.guild_id?.0);
 }
-pub async fn set_prefix(msg: &Message, ctx: &mut Context, new_prefix: &str) {
+pub async fn set_prefix(msg: &Message, ctx: &Context, new_prefix: &str) {
     // get mutable prefix variable
     if let Some(prefix_lock) = ctx.data.read().await.get::<crate::Prefix>() {
         let mut prefix = prefix_lock.write().await;

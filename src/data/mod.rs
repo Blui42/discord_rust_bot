@@ -44,7 +44,7 @@ impl serenity::prelude::TypeMapKey for Data {
 }
 
 // give the user cookies and xp
-pub async fn reward_user(msg: &Message, ctx: &mut Context) {
+pub async fn reward_user(msg: &Message, ctx: &Context) {
     let author_id = msg.author.id.0;
     if let Some(data_lock) = ctx.data.read().await.get::<Data>() {
         let mut data = data_lock.write().await;

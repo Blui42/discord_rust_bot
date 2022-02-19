@@ -179,7 +179,7 @@ pub async fn ban(ctx: Context, msg: Message) -> Result<(), String> {
     Ok(())
 }
 #[cfg(feature = "legacy_commands")]
-pub async fn prefix(mut ctx: Context, msg: Message) -> Result<(), String> {
+pub async fn prefix(ctx: Context, msg: Message) -> Result<(), String> {
     if msg.is_private() {
         return Ok(());
     }
@@ -210,7 +210,7 @@ pub async fn prefix(mut ctx: Context, msg: Message) -> Result<(), String> {
             .map_err(stringify_error)?;
         return Ok(());
     }
-    set_prefix(&msg, &mut ctx, &new_prefix).await;
+    set_prefix(&msg, &ctx, &new_prefix).await;
     msg.channel_id
         .say(
             &ctx.http,
