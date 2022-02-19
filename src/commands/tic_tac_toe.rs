@@ -146,18 +146,16 @@ pub async fn mark_field(
     } else {
         return Some("You don't have a running game!".to_string());
     };
-    let field_number: u8 =
-        if let Some(a) = validate_field_number(options.get(0)?.value.as_ref()?.as_i64()?) {
-            a
-        } else {
-            return Some("That's an invalid field number!".to_string());
-        };
+    let field_number = options.get(0)?.value.as_ref()?.as_u64()? as usize;
+    if field_number == 0 || field_number > 9 {
+        return Some("That is not a valid field!".to_string());
+    }
     if game.get(field_number)? == 0 {
         let player = game.player_number(user.id);
         if game.previous_player == player {
             return Some("It's not your turn!".to_string());
         }
-        game.insert(player, field_number)?;
+        game.insert(player, field_number as usize)?;
         game.previous_player = player;
     }
 
@@ -197,14 +195,6 @@ pub async fn find_game_index2(
         }
     }
     None
-}
-
-pub fn validate_field_number(field: i64) -> Option<u8> {
-    if field > 0 && field <= 9 {
-        Some(field as u8)
-    } else {
-        None
-    }
 }
 
 #[derive(Clone, PartialEq)]
@@ -304,35 +294,34 @@ impl TicTacToe {
     /// Insert a number into the field.
     /// ## Return
     /// Returns `Some(())` on Success and `None` on Failure
-    pub fn insert(&mut self, player: u8, field: u8) -> Option<()> {
+    pub fn insert(&mut self, player: u8, field: usize) -> Option<()> {
         // Check that field is in bounds
         if field > 9 || field == 0 {
             return None;
         }
 
         if field <= 3 {
-            self.field[0][(field - 1) as usize] = player;
+            self.field[0][field - 1] = player;
             return Some(());
         }
         if field <= 6 {
-            self.field[0][(field - 4) as usize] = player;
+            self.field[0][field - 4] = player;
             return Some(());
         }
-        self.field[0][(field - 7) as usize] = player;
+        self.field[0][field - 7] = player;
         Some(())
     }
 
-    pub fn get(&self, field: u8) -> Option<u8> {
+    pub fn get(&self, field: usize) -> Option<u8> {
         if field > 9 || field == 0 {
-            return None;
+            None
+        } else if field <= 3 {
+            Some(self.field[0][field - 1])
+        } else if field <= 6 {
+            Some(self.field[1][field - 4])
+        } else {
+            Some(self.field[2][field - 7])
         }
-        if field <= 3 {
-            return Some(*self.field[0].get((field - 1) as usize)?);
-        }
-        if field <= 6 {
-            return Some(*self.field[1].get((field - 4) as usize)?);
-        }
-        return Some(*self.field[2].get((field - 7) as usize)?);
     }
 }
 
