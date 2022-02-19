@@ -10,7 +10,7 @@ use serenity::{
     },
     prelude::*,
 };
-use std::fmt::{Display, Formatter, Result as FmtResult};
+use std::fmt;
 use tokio::sync::RwLock;
 
 pub async fn command(
@@ -338,8 +338,8 @@ impl TicTacToe {
     }
 }
 
-impl Display for TicTacToe {
-    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+impl fmt::Display for TicTacToe {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if f.alternate() {
             const NUMBER_FIELD: [[&str; 3]; 3] = [
                 [":one:", ":two:", ":three:"],
