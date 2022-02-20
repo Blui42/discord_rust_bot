@@ -199,7 +199,7 @@ pub async fn find_game_index2(
 
 #[derive(Clone, PartialEq)]
 pub struct TicTacToe {
-    pub field: [u8; 9],
+    field: [u8; 9],
     pub player_1: UserId,
     pub player_2: UserId,
     pub previous_player: u8,
