@@ -150,7 +150,7 @@ pub async fn mark_field(
     if field_number == 0 || field_number > 9 {
         return Some("That is not a valid field!".to_string());
     }
-    if game.get(field_number)? == 0 {
+    if *game.get(field_number)? == 0 {
         let player = game.player_number(user.id);
         if game.previous_player == player {
             return Some("It's not your turn!".to_string());
@@ -199,7 +199,7 @@ pub async fn find_game_index2(
 
 #[derive(Clone, PartialEq)]
 pub struct TicTacToe {
-    pub field: [[u8; 3]; 3],
+    pub field: [u8; 9],
     pub player_1: UserId,
     pub player_2: UserId,
     pub previous_player: u8,
@@ -208,7 +208,7 @@ pub struct TicTacToe {
 impl TicTacToe {
     pub fn new(player_1: UserId, player_2: UserId) -> Self {
         Self {
-            field: [[0; 3]; 3],
+            field: [0; 9],
             player_1,
             player_2,
             previous_player: 0,
@@ -240,14 +240,9 @@ impl TicTacToe {
     }
 
     pub fn check_rows(&self) -> u8 {
-        for i in 0..3 {
-            if self.field[i][0] != 0 {
-                if self.field[i].iter().all(|x| *x == 1) {
-                    return 1;
-                }
-                if self.field[i].iter().all(|x| *x == 2) {
-                    return 2;
-                }
+        for i in (0..9).step_by(3) {
+            if self.field[i] == self.field[i + 1] && self.field[i] == self.field[i + 2] {
+                return self.field[i];
             }
         }
         0
@@ -255,25 +250,20 @@ impl TicTacToe {
 
     pub fn check_columns(&self) -> u8 {
         for i in 0..3 {
-            if self.field[0][i] != 0 {
-                if self.field.iter().all(|x| x[i] == 1) {
-                    return 1;
-                }
-                if self.field.iter().all(|x| x[i] == 2) {
-                    return 2;
-                }
+            if self.field[i] == self.field[i + 3] && self.field[i + 3] == self.field[i + 6] {
+                return self.field[i];
             }
         }
         0
     }
 
     pub fn check_diagonal(&self) -> u8 {
-        if self.field[1][1] == 0 {
+        if self.field[4] == 0 {
             0
-        } else if (self.field[0][0] == self.field[1][1] && self.field[1][1] == self.field[2][2])
-            || (self.field[0][2] == self.field[1][1] && self.field[1][1] == self.field[2][0])
+        } else if (self.field[0] == self.field[4] && self.field[4] == self.field[8])
+            || (self.field[6] == self.field[4] && self.field[4] == self.field[2])
         {
-            self.field[1][1]
+            self.field[4]
         } else {
             0
         }
@@ -295,66 +285,44 @@ impl TicTacToe {
     /// ## Return
     /// Returns `Some(())` on Success and `None` on Failure
     pub fn insert(&mut self, player: u8, field: usize) -> Option<()> {
-        // Check that field is in bounds
-        if field > 9 || field == 0 {
-            return None;
-        }
-
-        if field <= 3 {
-            self.field[0][field - 1] = player;
-            return Some(());
-        }
-        if field <= 6 {
-            self.field[0][field - 4] = player;
-            return Some(());
-        }
-        self.field[0][field - 7] = player;
+        *self.field.get_mut(field)? = player;
         Some(())
     }
 
-    pub fn get(&self, field: usize) -> Option<u8> {
-        if field > 9 || field == 0 {
-            None
-        } else if field <= 3 {
-            Some(self.field[0][field - 1])
-        } else if field <= 6 {
-            Some(self.field[1][field - 4])
-        } else {
-            Some(self.field[2][field - 7])
-        }
+    pub fn get(&self, field: usize) -> Option<&u8> {
+        self.field.get(field)
     }
 }
 
 impl fmt::Display for TicTacToe {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if f.alternate() {
-            const NUMBER_FIELD: [[&str; 3]; 3] = [
-                [":one:", ":two:", ":three:"],
-                [":four:", ":five:", ":six:"],
-                [":seven:", ":eight:", ":nine:"],
+            const NUMBER_FIELD: [&str; 9] = [
+                ":one:", ":two:", ":three:", ":four:", ":five:", ":six:", ":seven:", ":eight:",
+                ":nine:",
             ];
-            for (row, nr) in self.field.iter().zip(NUMBER_FIELD.iter()) {
-                for (element, nr) in row.iter().zip(nr.iter()) {
-                    match element {
-                        0 => write!(f, "{}", nr)?,
-                        1 => write!(f, ":negative_squared_cross_mark:")?,
-                        2 => write!(f, ":o2:")?,
-                        _ => write!(f, ":interrobang:")?,
-                    }
+            for (index, (element, nr)) in self.field.iter().zip(NUMBER_FIELD.iter()).enumerate() {
+                match element {
+                    0 => write!(f, "{}", nr)?,
+                    1 => write!(f, ":negative_squared_cross_mark:")?,
+                    2 => write!(f, ":o2:")?,
+                    _ => write!(f, ":interrobang:")?,
                 }
-                writeln!(f)?
+                if (index + 1) % 3 == 0 {
+                    writeln!(f)?
+                }
             }
         } else {
-            for row in self.field.iter() {
-                for element in row.iter() {
-                    match element {
-                        0 => write!(f, ":blue_square:")?,
-                        1 => write!(f, ":negative_squared_cross_mark:")?,
-                        2 => write!(f, ":o2:")?,
-                        _ => write!(f, ":interrobang:")?,
-                    };
+            for (index, element) in self.field.iter().enumerate() {
+                match element {
+                    0 => write!(f, ":blue_square:")?,
+                    1 => write!(f, ":negative_squared_cross_mark:")?,
+                    2 => write!(f, ":o2:")?,
+                    _ => write!(f, ":interrobang:")?,
                 }
-                writeln!(f)?
+                if (index + 1) % 3 == 0 {
+                    writeln!(f)?
+                }
             }
         }
         Ok(())
