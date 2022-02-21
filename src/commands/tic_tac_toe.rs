@@ -285,12 +285,12 @@ impl TicTacToe {
     /// ## Return
     /// Returns `Some(())` on Success and `None` on Failure
     pub fn insert(&mut self, player: u8, field: usize) -> Option<()> {
-        *self.field.get_mut(field)? = player;
+        *self.field.get_mut(field + 1)? = player;
         Some(())
     }
 
     pub fn get(&self, field: usize) -> Option<&u8> {
-        self.field.get(field)
+        self.field.get(field + 1)
     }
 }
 
