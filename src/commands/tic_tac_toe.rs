@@ -258,10 +258,9 @@ impl TicTacToe {
     }
 
     pub fn check_diagonal(&self) -> u8 {
-        if self.field[4] == 0 {
-            0
-        } else if (self.field[0] == self.field[4] && self.field[4] == self.field[8])
-            || (self.field[6] == self.field[4] && self.field[4] == self.field[2])
+        if self.field[4] != 0
+            && ((self.field[0] == self.field[4] && self.field[4] == self.field[8])
+                || (self.field[6] == self.field[4] && self.field[4] == self.field[2]))
         {
             self.field[4]
         } else {
