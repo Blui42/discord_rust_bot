@@ -31,11 +31,7 @@ impl Prefix {
             .insert(guild.to_string(), Value::String(prefix.to_string()));
     }
     pub fn new(path: String) -> Self {
-        let file_contents = if let Ok(a) = fs::read_to_string(&path) {
-            a
-        } else {
-            "{}".to_string()
-        };
+        let file_contents = fs::read_to_string(&path).unwrap_or_else(|_| "{}".to_string());
         let prefix: serde_json::Map<String, Value> =
             serde_json::from_str(&file_contents).unwrap_or_default();
         Self { path, prefix }
