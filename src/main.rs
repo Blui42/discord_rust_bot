@@ -116,16 +116,18 @@ async fn main() {
 
     let config = data::config::Config::from_file("config.toml").unwrap_or_default();
 
+    println!("{:#?}", &config);
+
     // Try to read Application ID from config.toml.
     // On failure, try to derive Application ID from bot token.
     let application_id = match config.application_id {
-        Some(a) => a,
-        None => {
+        0 => {
             serenity::client::parse_token(&token)
                 .expect("Application ID was not given and could not be derived from token.")
                 .bot_user_id
                 .0
         }
+        a => a,
     };
     // create client
     let mut client: Client = Client::builder(&token)

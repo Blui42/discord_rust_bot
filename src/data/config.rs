@@ -5,9 +5,9 @@ extern crate toml;
 
 #[derive(Deserialize, Debug)]
 pub struct Config {
-    pub application_id: Option<u64>,
-    pub home_server: Option<u64>,
-    pub home_channel: Option<u64>,
+    pub application_id: u64,
+    pub home_server: u64,
+    pub home_channel: u64,
     pub owners: Box<[u64]>,
     pub legacy_commands: bool,
     pub respond_dm: bool,
@@ -28,9 +28,9 @@ impl serenity::prelude::TypeMapKey for Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            application_id: None,
-            home_server: None,
-            home_channel: None,
+            application_id: 0,
+            home_server: 0,
+            home_channel: 0,
             owners: Box::new([]),
             legacy_commands: true,
             respond_dm: true,
