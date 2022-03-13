@@ -92,7 +92,11 @@ impl EventHandler for Handler {
                 .create_interaction_response(&ctx.http, |response| {
                     response
                         .kind(interactions::InteractionResponseType::ChannelMessageWithSource)
-                        .interaction_response_data(|message| message.content("An Error occured."))
+                        .interaction_response_data(|message| {
+                            message
+                            .content("An Error occured.")
+                            .flags(interactions::InteractionApplicationCommandCallbackDataFlags::EPHEMERAL)
+                        })
                 })
                 .await
             {
