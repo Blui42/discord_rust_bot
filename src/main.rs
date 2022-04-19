@@ -65,32 +65,25 @@ impl EventHandler for Handler {
         } else {
             return;
         };
+        let options = command.data.options.as_slice();
         let response = match command.data.name.as_str() {
-            "roll" => fun::roll_command(command.data.options.as_slice()).await,
+            "roll" => fun::roll_command(options).await,
             "coin" => fun::coin_command().await,
-            "id" => {
-                info::get_id_command(command.data.options.as_slice(), command.guild_id.as_ref())
-                    .await
-            }
-            "ttt" => {
-                tic_tac_toe::command(command.data.options.as_slice(), &ctx, &command.user).await
-            }
+            "id" => info::get_id_command(options, command.guild_id.as_ref()).await,
+            "ttt" => tic_tac_toe::command(options, &ctx, &command.user).await,
             _ => None,
         };
         if let Some(a) = response {
-            if let Err(why) = command
+            command
                 .create_interaction_response(&ctx.http, |response| {
                     response
                         .kind(interactions::InteractionResponseType::ChannelMessageWithSource)
                         .interaction_response_data(|message| message.content(a))
                 })
                 .await
-            {
-                eprintln!("An Error occured: {}", why)
-            }
+                .unwrap_or_else(|why| eprintln!("An Error occured: {why}"))
         } else {
-            #[allow(clippy::collapsible_else_if)]
-            if let Err(why) = command
+            command
                 .create_interaction_response(&ctx.http, |response| {
                     response
                         .kind(interactions::InteractionResponseType::ChannelMessageWithSource)
@@ -100,10 +93,7 @@ impl EventHandler for Handler {
                             .flags(interactions::InteractionApplicationCommandCallbackDataFlags::EPHEMERAL)
                         })
                 })
-                .await
-            {
-                eprintln!("An Error occured: {}", why)
-            }
+                .await.unwrap_or_else(|why|eprintln!("An Error occured: {why}"))
         }
     }
     async fn ready(&self, ctx: Context, ready: Ready) {
