@@ -21,10 +21,33 @@ pub fn commands(commands: &mut CreateApplicationCommands) -> &mut CreateApplicat
                 .description("Get the ID of the mentioned user/role/channel")
                 .create_option(|option| {
                     option
-                        .name("target")
-                        .description("user/role/channel to get the ID from")
-                        .kind(ApplicationCommandOptionType::Mentionable)
-                        .required(true)
+                        .name("server")
+                        .description("Get ID of the server you're on")
+                        .kind(ApplicationCommandOptionType::SubCommand)
+                })
+                .create_option(|option| {
+                    option
+                        .name("user")
+                        .description("Get ID of a user or role")
+                        .kind(ApplicationCommandOptionType::SubCommand)
+                        .create_sub_option(|sub_option| {
+                            sub_option
+                                .name("target")
+                                .description("The user or role to get the ID of")
+                                .kind(ApplicationCommandOptionType::Mentionable)
+                        })
+                })
+                .create_option(|option| {
+                    option
+                        .name("channel")
+                        .description("Get the user of a Channel")
+                        .kind(ApplicationCommandOptionType::SubCommand)
+                        .create_sub_option(|sub_option| {
+                            sub_option
+                                .name("target")
+                                .description("The Channel to get the ID of")
+                                .kind(ApplicationCommandOptionType::Channel)
+                        })
                 })
         })
         .create_application_command(|command| {

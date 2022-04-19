@@ -68,7 +68,10 @@ impl EventHandler for Handler {
         let response = match command.data.name.as_str() {
             "roll" => fun::roll_command(command.data.options.as_slice()).await,
             "coin" => fun::coin_command().await,
-            "id" => info::get_id_command(command.data.options.as_slice()).await,
+            "id" => {
+                info::get_id_command(command.data.options.as_slice(), command.guild_id.as_ref())
+                    .await
+            }
             "ttt" => {
                 tic_tac_toe::command(command.data.options.as_slice(), &ctx, &command.user).await
             }

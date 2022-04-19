@@ -1,7 +1,7 @@
 use crate::stringify_error;
 use serenity::{
     model::{
-        channel::Message,
+        channel::Message, id::GuildId,
         interactions::application_command::ApplicationCommandInteractionDataOption,
     },
     prelude::*,
@@ -58,14 +58,27 @@ pub async fn id(ctx: Context, msg: Message) -> Result<(), String> {
     Ok(())
 }
 
-pub async fn get_id_command(options: &[ApplicationCommandInteractionDataOption]) -> Option<String> {
-    let target = options.get(0)?.value.as_ref()?.as_str()?;
-    if !(target.starts_with('<') && target.ends_with('>')) {
-        return Some("That's not a valid target. Mention a user, role, channel, etc".to_string());
+pub async fn get_id_command(
+    options: &[ApplicationCommandInteractionDataOption],
+    guild_id: Option<&GuildId>,
+) -> Option<String> {
+    dbg!(options);
+    let target_type = options.get(0)?;
+    match target_type.name.as_str() {
+        "user" | "channel" => Some(
+            options
+                .get(0)?
+                .options
+                .get(0)?
+                .value
+                .as_ref()?
+                .as_str()?
+                .to_string(),
+        ),
+        "server" => match guild_id {
+            Some(a) => Some(a.0.to_string()),
+            None => Some("This can only be used while on a server".to_string()),
+        },
+        _ => Some("Something went wrong".to_string()),
     }
-    let mut id = target.to_string();
-    for i in &["<", ">", "!", "#", "@", "&"] {
-        id = id.replace(i, "");
-    }
-    Some(id)
 }
