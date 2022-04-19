@@ -4,7 +4,6 @@ use commands::*;
 use data::{config::Config, prefix::Prefix, Data};
 use dotenv::dotenv;
 use serenity::{
-    client::bridge::gateway::GatewayIntents,
     model::{
         channel::Message,
         gateway::Ready,
@@ -126,24 +125,24 @@ async fn main() {
     // On failure, try to derive Application ID from bot token.
     let application_id = match config.application_id {
         0 => {
-            serenity::client::parse_token(&token)
+            serenity::utils::parse_token(&token)
                 .expect("Application ID was not given and could not be derived from token.")
-                .bot_user_id
                 .0
+                 .0
         }
         a => a,
     };
     // create client
-    let mut client: Client = Client::builder(&token)
-        .intents(
-            GatewayIntents::GUILD_MESSAGES
-                | GatewayIntents::DIRECT_MESSAGES
-                | GatewayIntents::GUILD_BANS,
-        )
-        .application_id(application_id)
-        .event_handler(Handler)
-        .await
-        .expect("Err creating client");
+    let mut client: Client = Client::builder(
+        &token,
+        GatewayIntents::GUILD_MESSAGES
+            | GatewayIntents::DIRECT_MESSAGES
+            | GatewayIntents::GUILD_BANS,
+    )
+    .application_id(application_id)
+    .event_handler(Handler)
+    .await
+    .expect("Err creating client");
 
     {
         let mut client_data = client.data.write().await;

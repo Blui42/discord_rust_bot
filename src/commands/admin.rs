@@ -13,7 +13,6 @@ pub async fn kick(ctx: Context, msg: Message) -> Result<(), String> {
         .await
         .map_err(stringify_error)?
         .permissions(&ctx)
-        .await
         .map_err(stringify_error)?
         .kick_members()
     {
@@ -37,7 +36,7 @@ pub async fn kick(ctx: Context, msg: Message) -> Result<(), String> {
             .map_err(stringify_error)?;
         return Ok(());
     }
-    let a = msg.guild(&ctx.cache).await.ok_or("Unknown Cache Error")?;
+    let a = msg.guild(&ctx.cache).ok_or("Unknown Cache Error")?;
     for i in msg.mentions.iter() {
         if a.kick_with_reason(
             &ctx.http,
@@ -76,7 +75,6 @@ pub async fn unban(ctx: Context, msg: Message) -> Result<(), String> {
         .await
         .map_err(stringify_error)?
         .permissions(&ctx)
-        .await
         .map_err(stringify_error)?
         .ban_members()
     {
@@ -93,7 +91,7 @@ pub async fn unban(ctx: Context, msg: Message) -> Result<(), String> {
             .map_err(stringify_error)?;
         return Ok(());
     }
-    let a = msg.guild(&ctx.cache).await.ok_or("Unknown Cache Error")?;
+    let a = msg.guild(&ctx.cache).ok_or("Unknown Cache Error")?;
     for i in msg.mentions.iter() {
         if a.unban(&ctx.http, i.id).await.is_ok() {
             if let Err(why) = msg
@@ -125,7 +123,6 @@ pub async fn ban(ctx: Context, msg: Message) -> Result<(), String> {
         .await
         .map_err(stringify_error)?
         .permissions(&ctx)
-        .await
         .map_err(stringify_error)?
         .ban_members()
     {
@@ -149,7 +146,7 @@ pub async fn ban(ctx: Context, msg: Message) -> Result<(), String> {
             .map_err(stringify_error)?;
         return Ok(());
     }
-    let a = msg.guild(&ctx.cache).await.ok_or("Unknown Cache Error")?;
+    let a = msg.guild(&ctx.cache).ok_or("Unknown Cache Error")?;
     for i in msg.mentions.iter() {
         if a.ban_with_reason(
             &ctx.http,
@@ -192,7 +189,6 @@ pub async fn prefix(ctx: Context, msg: Message) -> Result<(), String> {
         .await
         .map_err(stringify_error)?
         .permissions(&ctx)
-        .await
         .map_err(stringify_error)?
         .administrator()
     {
@@ -234,7 +230,6 @@ pub async fn delete(ctx: Context, msg: Message) -> Result<(), String> {
         .await
         .map_err(stringify_error)?
         .permissions(&ctx)
-        .await
         .map_err(stringify_error)?
         .manage_messages()
     {
@@ -260,11 +255,11 @@ pub async fn delete(ctx: Context, msg: Message) -> Result<(), String> {
         return Ok(());
     }
     let guild_channel = msg
-        .channel(&ctx.cache)
+        .channel(&ctx.http)
         .await
-        .ok_or("Unknown Cache Error")?
+        .map_err(|x| format!("Error getting Channel: {x}"))?
         .guild()
-        .ok_or("Unknown Cache Error")?;
+        .ok_or("Unknown Cache Error getting Guild")?;
     let messages = guild_channel
         .messages(&ctx.http, |retriever| retriever.limit(amount + 1))
         .await
