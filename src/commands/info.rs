@@ -57,7 +57,7 @@ pub async fn id(ctx: Context, msg: Message) -> Result<(), String> {
     }
     Ok(())
 }
-#[cfg(feature = "legacy_commands")]
+
 pub async fn get_id_command(options: &[ApplicationCommandInteractionDataOption]) -> Option<String> {
     let target = options.get(0)?.value.as_ref()?.as_str()?;
     if !(target.starts_with('<') && target.ends_with('>')) {
