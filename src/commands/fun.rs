@@ -13,12 +13,20 @@ use serenity::{
 
 #[cfg(feature = "legacy_commands")]
 pub async fn roll(ctx: Context, msg: Message) -> Result<(), String> {
-    let value = msg.content.replace(" ", "");
-    let mut an_iterator = value.split('d');
-    let rolls: u8 = an_iterator.next().unwrap_or("1").parse().unwrap_or(1);
-    let sides: u8 = an_iterator.next().unwrap_or("6").parse().unwrap_or(6);
+    let mut an_iterator = msg.content.split('d');
+    let rolls: u8 = an_iterator
+        .next()
+        .unwrap_or("1")
+        .trim()
+        .parse()
+        .unwrap_or(1);
+    let sides: u8 = an_iterator
+        .next()
+        .unwrap_or("6")
+        .trim()
+        .parse()
+        .unwrap_or(6);
     drop(an_iterator);
-    drop(value);
     if (sides < 2) || (rolls == 0) {
         msg.channel_id
             .say(&ctx.http, "Isn't that a bit pointless?")
@@ -28,13 +36,12 @@ pub async fn roll(ctx: Context, msg: Message) -> Result<(), String> {
     }
     let (total, min, max, summary) = roll_dice(rolls, sides);
     let response: String = format!(
-        "**Result: `{}`**\n Rolled {}x1 and {}x{} \n\n Detailed: ```{}```",
-        total, min, max, sides, summary
+        "**Result: `{total}`**\n Rolled {min}x1 and {max}x{sides} \n\n Detailed: ```{summary}```"
     );
     msg.channel_id
         .send_message(&ctx.http, |m| {
             m.embed(|e| {
-                e.title(format!("Rolled {}d{}.", rolls, sides))
+                e.title(format!("Rolled {rolls}d{sides}."))
                     .description(response)
                     .colour(0x0000ff)
             })
@@ -47,7 +54,7 @@ fn roll_dice(rolls: u8, sides: u8) -> (u16, u8, u8, String) {
     let between = Uniform::new_inclusive(1, sides);
     let mut rng = thread_rng();
     let mut total: u16 = 0;
-    let mut summary: String = "".to_string();
+    let mut summary: String = String::new();
     let mut min: u8 = 0;
     let mut max: u8 = 0;
     for i in 1..=rolls {
@@ -70,41 +77,36 @@ pub async fn roll_command(options: &[ApplicationCommandInteractionDataOption]) -
     let rolls: i64 = options.get(0)?.value.as_ref()?.as_i64()?;
     let sides: i64 = options.get(1)?.value.as_ref()?.as_i64()?;
     if rolls < 0 || sides < 0 {
-        return Some("<= !em pleH <=".to_string());
+        Some("<= !em pleH <=".to_string())
+    } else if rolls == 0 {
+        Some("Rolled no dice. (What did you expect?)".to_string())
+    } else if sides == 0 {
+        Some("0-sided dice are too dangerous to use.".to_string())
+    } else if sides == 1 {
+        Some("*Throws a ball*".to_string())
+    } else if rolls > 255 || sides > 255 {
+        Some("A number that I'm too lazy to calculate (Try numbers 255 and below)".to_string())
+    } else {
+        let (total, min, max, summary) = roll_dice(rolls as u8, sides as u8);
+        Some(format!("**Rolled {rolls} {sides}-sided dice.** \n**Result: `{total}`**\n Rolled {min}x1 and {max}x{sides} \n\n Detailed: ```{summary}```"))
     }
-    if rolls == 0 {
-        return Some("Rolled no dice. (What did you expect?)".to_string());
-    }
-    if sides == 0 {
-        return Some("0-sided dice are too dangerous to use.".to_string());
-    }
-    if sides == 1 {
-        return Some("*Throws a ball*".to_string());
-    }
-    if rolls > 255 || sides > 255 {
-        return Some(
-            "A number that I'm too lazy to calculate (Try numbers 255 and below)".to_string(),
-        );
-    }
-    let (total, min, max, summary) = roll_dice(rolls as u8, sides as u8);
-    Some(format!("**Rolled {} {}-sided dice.**\n**Result: `{}`**\n Rolled {}x1 and {}x{} \n\n Detailed: ```{}```", rolls, sides, total, min, max, sides, summary))
 }
 pub async fn coin_command() -> Option<String> {
     Some(flip_coin())
 }
+
+#[inline(always)]
 pub fn flip_coin() -> String {
     let number: u8 = random();
     if number > 128 {
-        return "It landed tails!".to_string();
+        "It landed tails!".to_string()
+    } else if number < 127 {
+        "It landed heads!".to_string()
+    } else if number == 127 {
+        "It didn't tip over!".to_string()
+    } else {
+        "It fell under the table!".to_string()
     }
-    if number < 127 {
-        return "It landed heads!".to_string();
-    }
-    if number == 127 {
-        return "It didn't tip over!".to_string();
-    }
-    /*if number == 128 return*/
-    "It fell under the table!".to_string()
 }
 #[cfg(feature = "legacy_commands")]
 pub async fn coin(ctx: Context, msg: Message) -> Result<(), String> {
