@@ -1,4 +1,5 @@
 use crate::stringify_error;
+use anyhow::{Context as CTX, Result};
 use serenity::{
     model::{
         channel::Message, id::GuildId,
@@ -61,24 +62,26 @@ pub async fn id(ctx: Context, msg: Message) -> Result<(), String> {
 pub async fn get_id_command(
     options: &[ApplicationCommandInteractionDataOption],
     guild_id: Option<&GuildId>,
-) -> Option<String> {
+) -> Result<String> {
     dbg!(options);
-    let target_type = options.get(0)?;
+    let target_type = options.get(0).context("get id target type")?;
     match target_type.name.as_str() {
-        "user" | "channel" => Some(
-            options
-                .get(0)?
-                .options
-                .get(0)?
-                .value
-                .as_ref()?
-                .as_str()?
-                .to_string(),
-        ),
+        "user" | "channel" => Ok(options
+            .get(0)
+            .context("get first argument")?
+            .options
+            .get(0)
+            .context("get seccond argument")?
+            .value
+            .as_ref()
+            .context("get value of seccond argument")?
+            .as_str()
+            .context("get string representation of 2nd arg")?
+            .to_string()),
         "server" => match guild_id {
-            Some(a) => Some(a.0.to_string()),
-            None => Some("This can only be used while on a server".to_string()),
+            Some(a) => Ok(a.0.to_string()),
+            None => Ok("This can only be used while on a server".to_string()),
         },
-        _ => Some("Something went wrong".to_string()),
+        _ => Ok("Something went wrong".to_string()),
     }
 }

@@ -1,4 +1,5 @@
 use crate::stringify_error;
+use anyhow::{Context as CTX, Result};
 use rand::{
     distributions::{Distribution, Uniform},
     prelude::*,
@@ -73,26 +74,40 @@ fn roll_dice(rolls: u8, sides: u8) -> (u16, u8, u8, String) {
     }
     (total, min, max, summary)
 }
-pub async fn roll_command(options: &[ApplicationCommandInteractionDataOption]) -> Option<String> {
-    let rolls: i64 = options.get(0)?.value.as_ref()?.as_i64()?;
-    let sides: i64 = options.get(1)?.value.as_ref()?.as_i64()?;
+pub async fn roll_command(options: &[ApplicationCommandInteractionDataOption]) -> Result<String> {
+    let rolls: i64 = options
+        .get(0)
+        .context("missing rolls field")?
+        .value
+        .as_ref()
+        .context("missing rolls field")?
+        .as_i64()
+        .context("rolls was not a number")?;
+    let sides: i64 = options
+        .get(1)
+        .context("missing sides field")?
+        .value
+        .as_ref()
+        .context("missing sides field")?
+        .as_i64()
+        .context("sides was not a number")?;
     if rolls < 0 || sides < 0 {
-        Some("<= !em pleH <=".to_string())
+        Ok("<= !em pleH <=".to_string())
     } else if rolls == 0 {
-        Some("Rolled no dice. (What did you expect?)".to_string())
+        Ok("Rolled no dice. (What did you expect?)".to_string())
     } else if sides == 0 {
-        Some("0-sided dice are too dangerous to use.".to_string())
+        Ok("0-sided dice are too dangerous to use.".to_string())
     } else if sides == 1 {
-        Some("*Throws a ball*".to_string())
+        Ok("*Throws a ball*".to_string())
     } else if rolls > 255 || sides > 255 {
-        Some("A number that I'm too lazy to calculate (Try numbers 255 and below)".to_string())
+        Ok("A number that I'm too lazy to calculate (Try numbers 255 and below)".to_string())
     } else {
         let (total, min, max, summary) = roll_dice(rolls as u8, sides as u8);
-        Some(format!("**Rolled {rolls} {sides}-sided dice.** \n**Result: `{total}`**\n Rolled {min}x1 and {max}x{sides} \n\n Detailed: ```{summary}```"))
+        Ok(format!("**Rolled {rolls} {sides}-sided dice.** \n**Result: `{total}`**\n Rolled {min}x1 and {max}x{sides} \n\n Detailed: ```{summary}```"))
     }
 }
-pub async fn coin_command() -> Option<String> {
-    Some(flip_coin())
+pub async fn coin_command() -> Result<String> {
+    Ok(flip_coin())
 }
 
 #[inline(always)]

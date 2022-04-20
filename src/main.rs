@@ -71,29 +71,31 @@ impl EventHandler for Handler {
             "coin" => fun::coin_command().await,
             "id" => info::get_id_command(options, command.guild_id.as_ref()).await,
             "ttt" => tic_tac_toe::command(options, &ctx, &command.user).await,
-            _ => None,
+            x => Err(anyhow::anyhow!(format!("Unknown Command: {x}"))),
         };
-        if let Some(a) = response {
-            command
+        match response {
+            Ok(msg) => command
                 .create_interaction_response(&ctx.http, |response| {
                     response
                         .kind(interactions::InteractionResponseType::ChannelMessageWithSource)
-                        .interaction_response_data(|message| message.content(a))
+                        .interaction_response_data(|message| message.content(msg))
                 })
                 .await
-                .unwrap_or_else(|why| eprintln!("An Error occured: {why}"))
-        } else {
-            command
-                .create_interaction_response(&ctx.http, |response| {
-                    response
-                        .kind(interactions::InteractionResponseType::ChannelMessageWithSource)
-                        .interaction_response_data(|message| {
-                            message
-                            .content("An Error occured.")
-                            .flags(interactions::InteractionApplicationCommandCallbackDataFlags::EPHEMERAL)
-                        })
-                })
-                .await.unwrap_or_else(|why|eprintln!("An Error occured: {why}"))
+                .unwrap_or_else(|why| eprintln!("An Error occured: {why}")),
+            Err(e) => {
+                eprintln!("------------\n{e:?}\n------------");
+                command
+                    .create_interaction_response(&ctx.http, |response| {
+                        response
+                            .kind(interactions::InteractionResponseType::ChannelMessageWithSource)
+                            .interaction_response_data(|message| {
+                                message
+                                .content(format!("An Error occured: {e}\nIf you find a consistent way to cause this error, please report it to my support discord."))
+                                .flags(interactions::InteractionApplicationCommandCallbackDataFlags::EPHEMERAL)
+                            })
+                    })
+                    .await.unwrap_or_else(|why|eprintln!("An Error occured: {why}"))
+            }
         }
     }
     async fn ready(&self, ctx: Context, ready: Ready) {

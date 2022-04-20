@@ -1,5 +1,5 @@
 #![cfg(feature = "tic_tac_toe")]
-
+use anyhow::{bail, Context as CTX, Result};
 use serenity::{
     model::{
         id::UserId,
@@ -17,98 +17,131 @@ pub async fn command(
     options: &[ApplicationCommandInteractionDataOption],
     ctx: &Context,
     user: &User,
-) -> Option<String> {
-    match options.get(0)?.name.as_str() {
-        "start" => start_game(options.get(0)?.options.as_slice(), ctx, user).await,
-        "set" => mark_field(options.get(0)?.options.as_slice(), ctx, user).await,
-        "cancel" => cancel_game(options.get(0)?.options.as_slice(), ctx, user).await,
-        _ => Some("Unknown Subcommand".to_string()),
+) -> Result<String> {
+    let subcommand = options.get(0).context("get subcommand")?;
+    match subcommand.name.as_str() {
+        "start" => start_game(subcommand.options.as_slice(), ctx, user).await,
+        "set" => mark_field(subcommand.options.as_slice(), ctx, user).await,
+        "cancel" => cancel_game(subcommand.options.as_slice(), ctx, user).await,
+        _ => Ok("Unknown Subcommand".to_string()),
     }
 }
 
-pub async fn make_request(opponent: UserId, ctx: &Context, user: &User) -> Option<String> {
+pub async fn make_request(opponent: UserId, ctx: &Context, user: &User) -> Result<String> {
     if opponent == user.id {
-        return Some("That would be kind of sad".to_string());
+        return Ok("That would be kind of sad".to_string());
     }
     let data = ctx.data.read().await;
-    let current_games = data.get::<TicTacToeRunning>()?.read().await;
+    let current_games = data
+        .get::<TicTacToeRunning>()
+        .context("get running games")?
+        .read()
+        .await;
     for game in current_games.iter() {
         if let Some(oppnent) = game.opponent(user.id) {
-            return Some(format!(
+            return Ok(format!(
                 "You are already in a game against {}!",
-                oppnent.to_user(&ctx.http).await.ok()?.tag()
+                oppnent.to_user(&ctx.http).await?.tag()
             ));
         }
         if game.has_player(opponent) {
-            return Some(format!("{} is already in a game!", user.tag()));
+            return Ok(format!("{} is already in a game!", user.tag()));
         }
     }
-    let game_queue = data.get::<TicTacToeQueue>()?.read().await;
+    let game_queue = data
+        .get::<TicTacToeQueue>()
+        .context("get game queue")?
+        .read()
+        .await;
     for game in game_queue.iter() {
         if game.player_2 == opponent && game.player_1 == user.id {
-            return Some(format!(
+            return Ok(format!(
                 "You have already requested a game against {}!",
-                opponent.to_user(&ctx.http).await.ok()?.tag()
+                opponent.to_user(&ctx.http).await?.tag()
             ));
         }
     }
-    let mut game_queue = data.get::<TicTacToeQueue>()?.write().await;
+    let mut game_queue = data
+        .get::<TicTacToeQueue>()
+        .context("Get game queue")?
+        .write()
+        .await;
     game_queue.push(TicTacToe::new(user.id, opponent));
-    Some(format!("You challanged {}!", opponent.mention()))
+    Ok(format!("You challanged {}!", opponent.mention()))
 }
 
 pub async fn cancel_game(
     options: &[ApplicationCommandInteractionDataOption],
     ctx: &Context,
     user: &User,
-) -> Option<String> {
+) -> Result<String> {
     // This will be Some(opponent) if the user spefified an opponent, otherwise None.
     let opponent = if let Some(a) = options.get(0) {
         if let ApplicationCommandInteractionDataOptionValue::User(opponent, _) =
-            a.resolved.as_ref()?
+            a.resolved.as_ref().context("Missing argument `opponent`")?
         {
             Some(&opponent.id)
         } else {
-            return Some(format!("Something went wrong. Report the following in the Support Discord: ```In {}/{}: opponent was of incorrect type, expected User. More Info: \n{:#?}```", file!(), line!(), a.resolved));
+            bail!(
+                "In {}/{}: opponent was of incorrect type, expected User. More Info: \n{:#?}",
+                file!(),
+                line!(),
+                a.resolved
+            );
         }
     } else {
         None
     };
 
     let data = ctx.data.read().await;
-    let game_queue = data.get::<TicTacToeQueue>()?.read().await;
+    let game_queue = data
+        .get::<TicTacToeQueue>()
+        .context("get game queue")?
+        .read()
+        .await;
     if let Some(index) = find_game_index2(&user.id, opponent, game_queue.as_slice()).await {
-        data.get::<TicTacToeQueue>()?
+        data.get::<TicTacToeQueue>()
+            .context("get game queue")?
             .write()
             .await
             .swap_remove(index);
-        return Some("Cancelled game.".to_string());
+        return Ok("Cancelled game.".to_string());
     }
 
-    let running_games = data.get::<TicTacToeRunning>()?.read().await;
+    let running_games = data
+        .get::<TicTacToeRunning>()
+        .context("get running games")?
+        .read()
+        .await;
     if let Some(index) = find_game_index2(&user.id, opponent, running_games.as_slice()).await {
-        data.get::<TicTacToeRunning>()?
+        data.get::<TicTacToeRunning>()
+            .context("get running games")?
             .write()
             .await
             .swap_remove(index);
-        return Some("You gave up.".to_string());
+        return Ok("You gave up.".to_string());
     }
-    Some("There was no game to cancel".to_string())
+    Ok("There was no game to cancel".to_string())
 }
 
 pub async fn start_game(
     options: &[ApplicationCommandInteractionDataOption],
     ctx: &Context,
     user: &User,
-) -> Option<String> {
+) -> Result<String> {
     // This will be Some(opponent) if the user spefified an opponent, otherwise None.
     let opponent = if let Some(a) = options.get(0) {
         if let ApplicationCommandInteractionDataOptionValue::User(opponent, _) =
-            a.resolved.as_ref()?
+            a.resolved.as_ref().context("get field `opponent`")?
         {
             Some(opponent.id)
         } else {
-            return Some(format!("Something went wrong. Report the following in the Support Discord: ```In {}/{}: opponent was of incorrect type, expected User. More Info: \n{:#?}```", file!(), line!(), a.resolved));
+            bail!(format!(
+                "In {}/{}: opponent was of incorrect type, expected User. More Info: \n{:#?}```",
+                file!(),
+                line!(),
+                a.resolved
+            ));
         }
     } else {
         None
@@ -116,16 +149,24 @@ pub async fn start_game(
     println!("{:#?}", opponent);
 
     let data = ctx.data.read().await;
-    let mut game_queue = data.get::<TicTacToeQueue>()?.write().await;
+    let mut game_queue = data
+        .get::<TicTacToeQueue>()
+        .context("get game queue")?
+        .write()
+        .await;
     if let Some(index) = find_game_index(&user.id, opponent.as_ref(), game_queue.as_slice()).await {
         let game = game_queue.swap_remove(index);
-        let mut running_games = data.get::<TicTacToeRunning>()?.write().await;
+        let mut running_games = data
+            .get::<TicTacToeRunning>()
+            .context("get running games")?
+            .write()
+            .await;
         running_games.push(game);
-        Some("Game initiated! Use `/ttt set <1-9>` to play!".to_string())
+        Ok("Game initiated! Use `/ttt set <1-9>` to play!".to_string())
     } else if let Some(opp) = opponent {
         make_request(opp, ctx, user).await
     } else {
-        Some("You have no incoming requests".to_string())
+        Ok("You have no incoming requests".to_string())
     }
 }
 
@@ -133,9 +174,13 @@ pub async fn mark_field(
     options: &[ApplicationCommandInteractionDataOption],
     ctx: &Context,
     user: &User,
-) -> Option<String> {
+) -> Result<String> {
     let data = ctx.data.read().await;
-    let mut games = data.get::<TicTacToeRunning>()?.write().await;
+    let mut games = data
+        .get::<TicTacToeRunning>()
+        .context("get running games")?
+        .write()
+        .await;
 
     let (index, game) = if let Some(a) = games
         .iter_mut()
@@ -144,30 +189,39 @@ pub async fn mark_field(
     {
         a
     } else {
-        return Some("You don't have a running game!".to_string());
+        return Ok("You don't have a running game!".to_string());
     };
-    let field_number = options.get(0)?.value.as_ref()?.as_u64()? as usize;
+    let field_number = options
+        .get(0)
+        .context("missing field `number`")?
+        .value
+        .as_ref()
+        .context("missing field `number`")?
+        .as_u64()
+        .context("field `number` was not a number")? as usize;
     if field_number == 0 || field_number > 9 {
-        return Some("That is not a valid field!".to_string());
+        return Ok("That is not a valid field!".to_string());
     }
-    if *game.get(field_number)? == 0 {
+    if *game
+        .get(field_number)
+        .context("field index out of bounds")?
+        == 0
+    {
         let player = game.player_number(user.id);
         if game.previous_player == player {
-            return Some("It's not your turn!".to_string());
+            return Ok("It's not your turn!".to_string());
         }
-        game.insert(player, field_number as usize)?;
+        game.insert(player, field_number as usize)
+            .context("index out of bounds")?;
         game.previous_player = player;
     }
 
     let winner = game.check_all();
     if winner == 0 {
-        Some(format!("{:#}", game))
+        Ok(format!("{:#}", game))
     } else {
         let game = games.swap_remove(index);
-        Some(format!(
-            "Player {} has won!\nPlaying field: \n{}",
-            winner, game
-        ))
+        Ok(format!("Player {winner} has won!\nPlaying field: \n{game}"))
     }
 }
 
