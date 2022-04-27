@@ -229,7 +229,7 @@ pub async fn delete(ctx: Context, msg: Message) -> Result<(), String> {
         .member(&ctx.http)
         .await
         .map_err(stringify_error)?
-        .permissions(&ctx)
+        .permissions(&ctx.cache)
         .map_err(stringify_error)?
         .manage_messages()
     {
