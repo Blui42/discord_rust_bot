@@ -12,7 +12,7 @@ use serenity::{
     },
     prelude::*,
 };
-use std::env;
+use std::{env, borrow::Cow};
 use tokio::{
     sync::RwLock,
     time::{sleep, Duration},
@@ -42,17 +42,17 @@ impl EventHandler for Handler {
         #[cfg(feature = "custom_prefix")]
         let prefix = if let Some(guild_id) = msg.guild_id {
             match data::prefix::get_prefix(&msg, &ctx).await {
-                Some(a) => a,
+                Some(a) => Cow::Owned(a),
                 None => {
                     data::prefix::set_prefix(&guild_id, &ctx, "!").await;
-                    "!".to_string()
+                    Cow::Borrowed("!")
                 }
             }
         } else {
-            "!".to_string()
+            Cow::Borrowed("!")
         };
         #[cfg(not(feature = "custom_prefix"))]
-        let prefix: String = "!";
+        let prefix = "!";
         // gives xp and cookies to user
         data::reward_user(&msg, &ctx).await;
 
@@ -94,7 +94,7 @@ impl EventHandler for Handler {
                                 .flags(interactions::InteractionApplicationCommandCallbackDataFlags::EPHEMERAL)
                             })
                     })
-                    .await.unwrap_or_else(|why|eprintln!("An Error occured: {why}"))
+                    .await.unwrap_or_else(|why| eprintln!("An Error occured: {why}"))
             }
         }
     }
@@ -106,7 +106,7 @@ impl EventHandler for Handler {
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), Box<dyn std::error::Error>>{
     dotenv().ok(); // place variables from .env into this enviroment
 
     let token = env::var("DISCORD_TOKEN") // load DISCORD_TOKEN from enviroment
@@ -136,8 +136,7 @@ async fn main() {
     )
     .application_id(application_id)
     .event_handler(Handler)
-    .await
-    .expect("Err creating client");
+    .await?;
 
     {
         let mut client_data = client.data.write().await;
@@ -169,30 +168,30 @@ async fn main() {
     {
         let client_data = client.data.clone();
         tokio::spawn(async move {
-            sleep(Duration::from_secs(600)).await;
-            println!("Preparing to save...");
-            tokio::join!(
-                async {
-                    if let Some(readable_data) = client_data.read().await.get::<Data>() {
-                        readable_data.read().await.save();
-                    } else {
-                        eprintln!("Data to save was not accessible");
+            loop {
+                sleep(Duration::from_secs(600)).await;
+                println!("Preparing to save...");
+                let res: Result<_, ()> = tokio::try_join!(
+                    async {
+                        client_data.read().await.get::<Data>().ok_or(())?.read().await.save();
+                        Ok(())
+                    },
+                    #[cfg(feature = "custom_prefix")]
+                    async {
+                        client_data.read().await.get::<Prefix>().ok_or(())?.read().await.save();
+                        Ok(())
                     }
-                },
-                #[cfg(feature = "custom_prefix")]
-                async {
-                    if let Some(prefix) = client_data.read().await.get::<Prefix>() {
-                        prefix.read().await.save();
-                    } else {
-                        eprintln!("Data to save was not accessible");
-                    }
+                );
+                if res.is_err() {
+                    eprintln!("Something went wrong trying to save. Disabled saving.");
+                    return;
                 }
-            )
+            }
         });
     }
 
     client
         .start_autosharded()
-        .await
-        .unwrap_or_else(|why| println!("Client error: {:?}", why));
+        .await?;
+    Ok(())
 }
