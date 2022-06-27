@@ -55,17 +55,18 @@ impl serenity::prelude::TypeMapKey for Prefix {
     type Value = RwLock<Self>;
 }
 
+/// Tries to get the prefix for the guild the user is in.
+/// If this returns None, a default value of "!" should be used.
 pub async fn get_prefix(msg: &Message, ctx: &Context) -> Option<String> {
-    // return "!" for PMs
     if msg.is_private() {
-        return Some("!".to_string());
+        return None;
     }
     // get immutable reference to prefix variable
     return ctx
         .data
         .read()
         .await
-        .get::<crate::Prefix>()?
+        .get::<Prefix>()?
         .read()
         .await
         .get(msg.guild_id?.0);

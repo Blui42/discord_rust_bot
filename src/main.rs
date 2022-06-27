@@ -12,7 +12,7 @@ use serenity::{
     },
     prelude::*,
 };
-use std::{env, borrow::Cow};
+use std::{borrow::Cow, env};
 use tokio::{
     sync::RwLock,
     time::{sleep, Duration},
@@ -40,16 +40,9 @@ impl EventHandler for Handler {
 
         // get the prefix for the current guild
         #[cfg(feature = "custom_prefix")]
-        let prefix = if let Some(guild_id) = msg.guild_id {
-            match data::prefix::get_prefix(&msg, &ctx).await {
-                Some(a) => Cow::Owned(a),
-                None => {
-                    data::prefix::set_prefix(&guild_id, &ctx, "!").await;
-                    Cow::Borrowed("!")
-                }
-            }
-        } else {
-            Cow::Borrowed("!")
+        let prefix = match data::prefix::get_prefix(&msg, &ctx).await {
+            Some(a) => Cow::Owned(a),
+            None => Cow::Borrowed("!"),
         };
         #[cfg(not(feature = "custom_prefix"))]
         let prefix = "!";
@@ -106,7 +99,7 @@ impl EventHandler for Handler {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>>{
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv().ok(); // place variables from .env into this enviroment
 
     let token = env::var("DISCORD_TOKEN") // load DISCORD_TOKEN from enviroment
@@ -173,12 +166,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>{
                 println!("Preparing to save...");
                 let res: Result<_, ()> = tokio::try_join!(
                     async {
-                        client_data.read().await.get::<Data>().ok_or(())?.read().await.save();
+                        client_data
+                            .read()
+                            .await
+                            .get::<Data>()
+                            .ok_or(())?
+                            .read()
+                            .await
+                            .save();
                         Ok(())
                     },
                     #[cfg(feature = "custom_prefix")]
                     async {
-                        client_data.read().await.get::<Prefix>().ok_or(())?.read().await.save();
+                        client_data
+                            .read()
+                            .await
+                            .get::<Prefix>()
+                            .ok_or(())?
+                            .read()
+                            .await
+                            .save();
                         Ok(())
                     }
                 );
@@ -190,8 +197,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>{
         });
     }
 
-    client
-        .start_autosharded()
-        .await?;
+    client.start_autosharded().await?;
     Ok(())
 }
