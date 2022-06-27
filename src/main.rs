@@ -107,8 +107,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let config = data::config::Config::from_file("config.toml").unwrap_or_default();
 
-    println!("{:#?}", &config);
-
     // Try to read Application ID from config.toml.
     // On failure, try to derive Application ID from bot token.
     let application_id = match config.application_id {
