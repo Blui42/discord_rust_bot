@@ -12,7 +12,7 @@ use serenity::{
     },
     prelude::*,
 };
-use std::{borrow::Cow, env};
+use std::{borrow::Cow, env, io};
 use tokio::{
     sync::RwLock,
     time::{sleep, Duration},
@@ -99,11 +99,13 @@ impl EventHandler for Handler {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> Result<(), anyhow::Error> {
     dotenv().ok(); // place variables from .env into this enviroment
 
-    let token = env::var("DISCORD_TOKEN") // load DISCORD_TOKEN from enviroment
-        .expect("Put DISCORD_TOKEN=YourTokenHere into the .env file or add a DISCORD_TOKEN variable to the enviroment"); // panic if not present
+    let token: String = env::var_os("DISCORD_TOKEN")
+    .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, 
+        "Put DISCORD_TOKEN=YourTokenHere into the .env file or add a DISCORD_TOKEN variable to the enviroment"))?.into_string()
+        .map_err(|_|io::Error::new(io::ErrorKind::Other, "DISCORD_TOKEN contained non-UTF8 characters"))?;
 
     let config = data::config::Config::from_file("config.toml").unwrap_or_default();
 
