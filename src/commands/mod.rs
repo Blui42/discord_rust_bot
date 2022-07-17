@@ -1,3 +1,4 @@
+#![allow(clippy::unused_async)]
 pub mod admin;
 pub mod fun;
 pub mod info;
@@ -126,7 +127,7 @@ pub async fn parse_command(prefix: &str, mut msg: Message, ctx: Context) {
                 )
                 .await
             {
-                eprintln!("An Error occured: {}", why)
+                eprintln!("An Error occured: {}", why);
             }
         }
         return;
@@ -156,6 +157,6 @@ pub async fn parse_command(prefix: &str, mut msg: Message, ctx: Context) {
         _ => Ok(()),
     };
     if let Err(why) = command_result {
-        eprintln!("An Error occured: {}", why)
+        eprintln!("An Error occured: {}", why);
     }
 }

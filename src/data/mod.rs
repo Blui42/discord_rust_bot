@@ -51,14 +51,14 @@ pub async fn reward_user(msg: &Message, ctx: &Context) {
         let mut rng = thread_rng();
 
         #[cfg(feature = "cookies")]
-        data.cookies.give(&author_id, rng.gen_range(0..2));
+        data.cookies.give(author_id, rng.gen_range(0..2));
 
         #[cfg(feature = "xp")]
         {
             let xp = rng.gen_range(0..5);
-            data.level.add_xp(&author_id, &0, xp); // global xp
+            data.level.add_xp(author_id, 0, xp); // global xp
             if let Some(a) = msg.guild_id {
-                data.level.add_xp(&author_id, &a.0, xp); // guild-specific xp
+                data.level.add_xp(author_id, a.0, xp); // guild-specific xp
             }
         }
     }

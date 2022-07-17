@@ -24,7 +24,7 @@ impl Prefix {
             *a = serde_json::json!(prefix);
             return;
         }
-        self.add_prefix(guild, prefix)
+        self.add_prefix(guild, prefix);
     }
     fn add_prefix(&mut self, guild: u64, prefix: &str) {
         self.prefix
@@ -34,7 +34,7 @@ impl Prefix {
         let file_contents = fs::read_to_string(&path).unwrap_or_else(|_| "{}".to_string());
         let prefix: serde_json::Map<String, Value> =
             serde_json::from_str(&file_contents).unwrap_or_default();
-        Self { path, prefix }
+        Self { prefix, path }
     }
     pub fn save(&self) {
         if let Ok(file_info) = serde_json::to_string_pretty(&self.prefix) {
@@ -57,7 +57,7 @@ impl serenity::prelude::TypeMapKey for Prefix {
 
 /// Tries to get the prefix for the guild the user is in.
 /// If this returns None, a default value of "!" should be used.
-pub async fn get_prefix(msg: &Message, ctx: &Context) -> Option<String> {
+pub async fn get(msg: &Message, ctx: &Context) -> Option<String> {
     if msg.is_private() {
         return None;
     }
@@ -71,7 +71,7 @@ pub async fn get_prefix(msg: &Message, ctx: &Context) -> Option<String> {
         .await
         .get(msg.guild_id?.0);
 }
-pub async fn set_prefix(guild: &GuildId, ctx: &Context, new_prefix: &str) {
+pub async fn set(guild: GuildId, ctx: &Context, new_prefix: &str) {
     // get mutable prefix variable
     if let Some(prefix_lock) = ctx.data.read().await.get::<crate::Prefix>() {
         let mut prefix = prefix_lock.write().await;

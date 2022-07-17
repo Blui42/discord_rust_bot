@@ -9,11 +9,11 @@ pub struct Level {
 }
 
 impl Level {
-    pub fn get(&self, user: &u64, guild: &u64) -> Option<LevelXP> {
+    pub fn get(&self, user: u64, guild: u64) -> Option<XPCounter> {
         let a = self.data.get(&guild.to_string())?.get(user.to_string())?;
         serde_json::from_value(a.clone()).ok()?
     }
-    pub fn set(&mut self, user: &u64, guild: &u64, to: &LevelXP) {
+    pub fn set(&mut self, user: u64, guild: u64, to: &XPCounter) {
         if let Some(a) = self.data.get_mut(&guild.to_string()) {
             if let Some(b) = a.get_mut(user.to_string()) {
                 if let Ok(to_as_value) = serde_json::to_value(to) {
@@ -22,29 +22,29 @@ impl Level {
                 }
             }
         }
-        self.add_user(user, guild)
+        self.add_user(user, guild);
     }
-    pub fn add_xp(&mut self, user: &u64, guild: &u64, xp: u64) {
+    pub fn add_xp(&mut self, user: u64, guild: u64, xp: u64) {
         if let Some(mut current_level) = self.get(user, guild) {
             current_level.add_xp(xp);
             self.set(user, guild, &current_level);
             return;
         }
-        self.add_user(user, guild)
+        self.add_user(user, guild);
     }
-    fn add_user(&mut self, user: &u64, guild: &u64) {
+    fn add_user(&mut self, user: u64, guild: u64) {
         if let Some(a) = self.data.get_mut(&guild.to_string()) {
             if let Some(map) = a.as_object_mut() {
                 map.insert(
                     user.to_string(),
-                    serde_json::to_value(LevelXP::new()).unwrap(),
+                    serde_json::to_value(XPCounter::new()).unwrap(),
                 );
             }
             return;
         }
-        self.add_guild(guild)
+        self.add_guild(guild);
     }
-    fn add_guild(&mut self, guild: &u64) {
+    fn add_guild(&mut self, guild: u64) {
         self.data.insert(guild.to_string(), serde_json::json!({}));
     }
     pub fn new(path: String) -> Self {
@@ -68,11 +68,11 @@ impl Drop for Level {
 }
 
 #[derive(Deserialize, Serialize, Debug)]
-pub struct LevelXP {
+pub struct XPCounter {
     pub level: u64,
     pub xp: u64,
 }
-impl LevelXP {
+impl XPCounter {
     pub fn new() -> Self {
         Self { level: 1, xp: 0 }
     }

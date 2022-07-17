@@ -33,7 +33,7 @@ pub async fn make_request(opponent: UserId, ctx: &Context, user: &User) -> Resul
     }
     let data = ctx.data.read().await;
     let current_games = data
-        .get::<TicTacToeRunning>()
+        .get::<Running>()
         .context("get running games")?
         .read()
         .await;
@@ -48,11 +48,7 @@ pub async fn make_request(opponent: UserId, ctx: &Context, user: &User) -> Resul
             return Ok(format!("{} is already in a game!", user.tag()));
         }
     }
-    let game_queue = data
-        .get::<TicTacToeQueue>()
-        .context("get game queue")?
-        .read()
-        .await;
+    let game_queue = data.get::<Queue>().context("get game queue")?.read().await;
     for game in game_queue.iter() {
         if game.player_2 == opponent && game.player_1 == user.id {
             return Ok(format!(
@@ -61,11 +57,7 @@ pub async fn make_request(opponent: UserId, ctx: &Context, user: &User) -> Resul
             ));
         }
     }
-    let mut game_queue = data
-        .get::<TicTacToeQueue>()
-        .context("Get game queue")?
-        .write()
-        .await;
+    let mut game_queue = data.get::<Queue>().context("Get game queue")?.write().await;
     game_queue.push(TicTacToe::new(user.id, opponent));
     Ok(format!("You challanged {}!", opponent.mention()))
 }
@@ -94,13 +86,9 @@ pub async fn cancel_game(
     };
 
     let data = ctx.data.read().await;
-    let game_queue = data
-        .get::<TicTacToeQueue>()
-        .context("get game queue")?
-        .read()
-        .await;
-    if let Some(index) = find_game_index2(&user.id, opponent, game_queue.as_slice()).await {
-        data.get::<TicTacToeQueue>()
+    let game_queue = data.get::<Queue>().context("get game queue")?.read().await;
+    if let Some(index) = find_game_index2(user.id, opponent, game_queue.as_slice()).await {
+        data.get::<Queue>()
             .context("get game queue")?
             .write()
             .await
@@ -109,12 +97,12 @@ pub async fn cancel_game(
     }
 
     let running_games = data
-        .get::<TicTacToeRunning>()
+        .get::<Running>()
         .context("get running games")?
         .read()
         .await;
-    if let Some(index) = find_game_index2(&user.id, opponent, running_games.as_slice()).await {
-        data.get::<TicTacToeRunning>()
+    if let Some(index) = find_game_index2(user.id, opponent, running_games.as_slice()).await {
+        data.get::<Running>()
             .context("get running games")?
             .write()
             .await
@@ -149,15 +137,11 @@ pub async fn start_game(
     println!("{:#?}", opponent);
 
     let data = ctx.data.read().await;
-    let mut game_queue = data
-        .get::<TicTacToeQueue>()
-        .context("get game queue")?
-        .write()
-        .await;
-    if let Some(index) = find_game_index(&user.id, opponent.as_ref(), game_queue.as_slice()).await {
+    let mut game_queue = data.get::<Queue>().context("get game queue")?.write().await;
+    if let Some(index) = find_game_index(user.id, opponent.as_ref(), game_queue.as_slice()).await {
         let game = game_queue.swap_remove(index);
         let mut running_games = data
-            .get::<TicTacToeRunning>()
+            .get::<Running>()
             .context("get running games")?
             .write()
             .await;
@@ -177,7 +161,7 @@ pub async fn mark_field(
 ) -> Result<String> {
     let data = ctx.data.read().await;
     let mut games = data
-        .get::<TicTacToeRunning>()
+        .get::<Running>()
         .context("get running games")?
         .write()
         .await;
@@ -198,7 +182,9 @@ pub async fn mark_field(
         .as_ref()
         .context("missing field `number`")?
         .as_u64()
-        .context("field `number` was not a number")? as usize;
+        .context("field `number` was not a number")?
+        .try_into()
+        .unwrap_or(10_usize);
     if field_number == 0 || field_number > 9 {
         return Ok("That is not a valid field!".to_string());
     }
@@ -226,12 +212,12 @@ pub async fn mark_field(
 }
 
 pub async fn find_game_index(
-    opponent: &UserId,
+    opponent: UserId,
     host: Option<&UserId>,
     games: &[TicTacToe],
 ) -> Option<usize> {
     for (index, game) in games.iter().enumerate() {
-        if game.player_2 == *opponent && (host.is_none() || game.player_1 == *host?) {
+        if game.player_2 == opponent && (host.is_none() || game.player_1 == *host?) {
             return Some(index);
         }
     }
@@ -239,12 +225,12 @@ pub async fn find_game_index(
 }
 
 pub async fn find_game_index2(
-    host: &UserId,
+    host: UserId,
     opponent: Option<&UserId>,
     games: &[TicTacToe],
 ) -> Option<usize> {
     for (index, game) in games.iter().enumerate() {
-        if game.player_1 == *host && (opponent.is_none() || game.player_2 == *opponent?) {
+        if game.player_1 == host && (opponent.is_none() || game.player_2 == *opponent?) {
             return Some(index);
         }
     }
@@ -362,7 +348,7 @@ impl fmt::Display for TicTacToe {
                     _ => write!(f, ":interrobang:")?,
                 }
                 if (index + 1) % 3 == 0 {
-                    writeln!(f)?
+                    writeln!(f)?;
                 }
             }
         } else {
@@ -374,7 +360,7 @@ impl fmt::Display for TicTacToe {
                     _ => write!(f, ":interrobang:")?,
                 }
                 if (index + 1) % 3 == 0 {
-                    writeln!(f)?
+                    writeln!(f)?;
                 }
             }
         }
@@ -382,11 +368,11 @@ impl fmt::Display for TicTacToe {
     }
 }
 
-pub struct TicTacToeRunning;
-impl TypeMapKey for TicTacToeRunning {
+pub struct Running;
+impl TypeMapKey for Running {
     type Value = RwLock<Vec<TicTacToe>>;
 }
-pub struct TicTacToeQueue;
-impl TypeMapKey for TicTacToeQueue {
+pub struct Queue;
+impl TypeMapKey for Queue {
     type Value = RwLock<Vec<TicTacToe>>;
 }

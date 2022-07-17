@@ -44,7 +44,7 @@ pub async fn roll(ctx: Context, msg: Message) -> Result<(), String> {
             m.embed(|e| {
                 e.title(format!("Rolled {rolls}d{sides}."))
                     .description(response)
-                    .colour(0x0000ff)
+                    .colour(0xff)
             })
         })
         .await
@@ -60,16 +60,16 @@ fn roll_dice(rolls: u8, sides: u8) -> (u16, u8, u8, String) {
     let mut max: u8 = 0;
     for i in 1..=rolls {
         let number: u8 = between.sample(&mut rng);
-        total += number as u16;
+        total += u16::from(number);
         summary += &number.to_string();
         if i != rolls {
-            summary += ", "
+            summary += ", ";
         }
         if number == sides {
-            max += 1
+            max += 1;
         }
         if number == 1 {
-            min += 1
+            min += 1;
         }
     }
     (total, min, max, summary)
@@ -102,7 +102,7 @@ pub async fn roll_command(options: &[ApplicationCommandInteractionDataOption]) -
     } else if rolls > 255 || sides > 255 {
         Ok("A number that I'm too lazy to calculate (Try numbers 255 and below)".to_string())
     } else {
-        let (total, min, max, summary) = roll_dice(rolls as u8, sides as u8);
+        let (total, min, max, summary) = roll_dice(rolls.to_le_bytes()[0], rolls.to_le_bytes()[0]);
         Ok(format!("**Rolled {rolls} {sides}-sided dice.** \n**Result: `{total}`**\n Rolled {min}x1 and {max}x{sides} \n\n Detailed: ```{summary}```"))
     }
 }
@@ -110,7 +110,7 @@ pub async fn coin_command() -> Result<String> {
     Ok(flip_coin())
 }
 
-#[inline(always)]
+#[inline]
 pub fn flip_coin() -> String {
     let number: u8 = random();
     if number > 128 {

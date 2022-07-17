@@ -26,7 +26,7 @@ pub async fn pic(ctx: Context, msg: Message) -> Result<(), String> {
             .map_err(stringify_error)?;
         return Ok(());
     }
-    for i in msg.mentions.iter() {
+    for i in &msg.mentions {
         msg.channel_id
             .say(&ctx.http, i.face())
             .await

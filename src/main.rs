@@ -1,6 +1,8 @@
+#![warn(clippy::pedantic)]
+
 mod commands;
 mod data;
-use commands::*;
+use commands::{commands, fun, info, stringify_error, tic_tac_toe};
 use data::{config::Config, prefix::Prefix, Data};
 use dotenv::dotenv;
 use serenity::{
@@ -20,6 +22,7 @@ use tokio::{
 
 struct Handler;
 
+#[allow(clippy::no_effect_underscore_binding)]
 #[serenity::async_trait]
 impl EventHandler for Handler {
     async fn message(&self, ctx: Context, msg: Message) {
@@ -40,7 +43,7 @@ impl EventHandler for Handler {
 
         // get the prefix for the current guild
         #[cfg(feature = "custom_prefix")]
-        let prefix = match data::prefix::get_prefix(&msg, &ctx).await {
+        let prefix = match data::prefix::get(&msg, &ctx).await {
             Some(a) => Cow::Owned(a),
             None => Cow::Borrowed("!"),
         };
@@ -87,14 +90,14 @@ impl EventHandler for Handler {
                                 .flags(interactions::InteractionApplicationCommandCallbackDataFlags::EPHEMERAL)
                             })
                     })
-                    .await.unwrap_or_else(|why| eprintln!("An Error occured: {why}"))
+                    .await.unwrap_or_else(|why| eprintln!("An Error occured: {why}"));
             }
         }
     }
     async fn ready(&self, ctx: Context, ready: Ready) {
         println!("{} is connected!", ready.user.tag());
-        let _ = ApplicationCommand::set_global_application_commands(&ctx.http, commands).await;
-        // let _ = id::GuildId(792489181774479400).set_application_commands(&ctx.http, commands).await;
+        drop(ApplicationCommand::set_global_application_commands(&ctx.http, commands).await);
+        // drop(id::GuildId(792489181774479400).set_application_commands(&ctx.http, commands).await);
     }
 }
 
@@ -106,7 +109,6 @@ async fn main() -> Result<(), anyhow::Error> {
     .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, 
         "Put DISCORD_TOKEN=YourTokenHere into the .env file or add a DISCORD_TOKEN variable to the enviroment"))?.into_string()
         .map_err(|_|io::Error::new(io::ErrorKind::Other, "DISCORD_TOKEN contained non-UTF8 characters"))?;
-
     let config = data::config::Config::from_file("config.toml").unwrap_or_default();
 
     // Try to read Application ID from config.toml.
@@ -141,9 +143,9 @@ async fn main() -> Result<(), anyhow::Error> {
         client_data.insert::<Prefix>(RwLock::new(Prefix::new("prefix.json".to_string())));
 
         #[cfg(feature = "tic_tac_toe")]
-        client_data.insert::<tic_tac_toe::TicTacToeRunning>(RwLock::new(Vec::with_capacity(3)));
+        client_data.insert::<tic_tac_toe::Running>(RwLock::new(Vec::with_capacity(3)));
         #[cfg(feature = "tic_tac_toe")]
-        client_data.insert::<tic_tac_toe::TicTacToeQueue>(RwLock::new(Vec::with_capacity(3)));
+        client_data.insert::<tic_tac_toe::Queue>(RwLock::new(Vec::with_capacity(3)));
     }
 
     let shard_manager = client.shard_manager.clone();

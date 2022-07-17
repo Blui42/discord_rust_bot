@@ -1,4 +1,4 @@
-use crate::{data::prefix::set_prefix, stringify_error};
+use crate::{data::prefix, stringify_error};
 use serenity::{model::channel::Message, prelude::*};
 use tokio::time::{sleep, Duration};
 
@@ -37,7 +37,7 @@ pub async fn kick(ctx: Context, msg: Message) -> Result<(), String> {
         return Ok(());
     }
     let a = msg.guild(&ctx.cache).ok_or("Unknown Cache Error")?;
-    for i in msg.mentions.iter() {
+    for i in &msg.mentions {
         if a.kick_with_reason(
             &ctx.http,
             i.id,
@@ -51,14 +51,14 @@ pub async fn kick(ctx: Context, msg: Message) -> Result<(), String> {
                 .say(&ctx.http, format!("Kicked `{}`", i.tag()))
                 .await
             {
-                eprintln!("An Error occured: {}", why)
+                eprintln!("An Error occured: {}", why);
             }
         } else if let Err(why) = msg
             .channel_id
             .say(&ctx.http, format!("Can't kick `{}`", i.tag()))
             .await
         {
-            eprintln!("An Error occured: {}", why)
+            eprintln!("An Error occured: {}", why);
         }
         sleep(Duration::from_millis(500)).await;
     }
@@ -92,21 +92,21 @@ pub async fn unban(ctx: Context, msg: Message) -> Result<(), String> {
         return Ok(());
     }
     let a = msg.guild(&ctx.cache).ok_or("Unknown Cache Error")?;
-    for i in msg.mentions.iter() {
+    for i in &msg.mentions {
         if a.unban(&ctx.http, i.id).await.is_ok() {
             if let Err(why) = msg
                 .channel_id
                 .say(&ctx.http, format!("Unbanned `{}`", i.tag()))
                 .await
             {
-                eprintln!("An Error occured: {}", why)
+                eprintln!("An Error occured: {}", why);
             }
         } else if let Err(why) = msg
             .channel_id
             .say(&ctx.http, format!("Can't unban `{}`", i.tag()))
             .await
         {
-            eprintln!("An Error occured: {}", why)
+            eprintln!("An Error occured: {}", why);
         }
         sleep(Duration::from_millis(500)).await;
     }
@@ -147,7 +147,7 @@ pub async fn ban(ctx: Context, msg: Message) -> Result<(), String> {
         return Ok(());
     }
     let a = msg.guild(&ctx.cache).ok_or("Unknown Cache Error")?;
-    for i in msg.mentions.iter() {
+    for i in &msg.mentions {
         if a.ban_with_reason(
             &ctx.http,
             i.id,
@@ -162,14 +162,14 @@ pub async fn ban(ctx: Context, msg: Message) -> Result<(), String> {
                 .say(&ctx.http, format!("Banned `{}`", i.tag()))
                 .await
             {
-                eprintln!("An Error occured: {}", why)
+                eprintln!("An Error occured: {}", why);
             }
         } else if let Err(why) = msg
             .channel_id
             .say(&ctx.http, format!("Can't ban `{}`", i.tag()))
             .await
         {
-            eprintln!("An Error occured: {}", why)
+            eprintln!("An Error occured: {}", why);
         }
         sleep(Duration::from_millis(500)).await;
     }
@@ -209,7 +209,7 @@ pub async fn prefix(ctx: Context, msg: Message) -> Result<(), String> {
             .map_err(stringify_error)?;
         return Ok(());
     }
-    set_prefix(&guild, &ctx, &new_prefix).await;
+    prefix::set(guild, &ctx, &new_prefix).await;
     msg.channel_id
         .say(
             &ctx.http,

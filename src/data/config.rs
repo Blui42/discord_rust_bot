@@ -3,6 +3,7 @@ use serde::Deserialize;
 use std::fs;
 extern crate toml;
 
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Deserialize, Debug)]
 pub struct Config {
     pub application_id: u64,
