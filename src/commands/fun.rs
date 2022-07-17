@@ -102,7 +102,7 @@ pub async fn roll_command(options: &[ApplicationCommandInteractionDataOption]) -
     } else if rolls > 255 || sides > 255 {
         Ok("A number that I'm too lazy to calculate (Try numbers 255 and below)".to_string())
     } else {
-        let (total, min, max, summary) = roll_dice(rolls.to_le_bytes()[0], rolls.to_le_bytes()[0]);
+        let (total, min, max, summary) = roll_dice(rolls.to_le_bytes()[0], sides.to_le_bytes()[0]);
         Ok(format!("**Rolled {rolls} {sides}-sided dice.** \n**Result: `{total}`**\n Rolled {min}x1 and {max}x{sides} \n\n Detailed: ```{summary}```"))
     }
 }
