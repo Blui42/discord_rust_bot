@@ -2,7 +2,7 @@
 
 mod commands;
 mod data;
-use commands::{commands, fun, info, stringify_error, tic_tac_toe};
+use commands::{commands, fun, info, tic_tac_toe};
 use data::{config::Config, prefix::Prefix, Data};
 use dotenv::dotenv;
 use serenity::{
@@ -59,7 +59,7 @@ impl EventHandler for Handler {
         data::reward_user(&msg, &ctx).await;
 
         #[cfg(feature = "legacy_commands")]
-        commands::parse_command(&prefix, msg, ctx).await;
+        commands::parse(&prefix, msg, ctx).await;
     }
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
         let command = if let Interaction::ApplicationCommand(command) = interaction {

@@ -115,7 +115,7 @@ pub fn commands(commands: &mut CreateApplicationCommands) -> &mut CreateApplicat
         })
 }
 #[cfg(feature = "legacy_commands")]
-pub async fn parse_command(prefix: &str, mut msg: Message, ctx: Context) {
+pub async fn parse(prefix: &str, mut msg: Message, ctx: Context) {
     if !msg.content.starts_with(&prefix) {
         // print out the prefix if the bot is mentioned
         if let Ok(true) = msg.mentions_me(&ctx.http).await {

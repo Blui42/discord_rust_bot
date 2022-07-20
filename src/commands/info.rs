@@ -1,4 +1,4 @@
-use crate::stringify_error;
+use super::stringify_error;
 use anyhow::{Context as CTX, Result};
 use serenity::{
     model::{
