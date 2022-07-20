@@ -2,19 +2,13 @@
 
 mod commands;
 mod data;
-use commands::{commands, fun, info, tic_tac_toe};
 use data::{config::Config, prefix::Prefix, Data};
 use dotenv::dotenv;
 use serenity::{
     model::{
-        channel::Message,
-        gateway::Ready,
         application::{
             command::Command,
-            interaction::{
-                Interaction,
-                self,
-            },
+            interaction::Interaction,
         },
         prelude::*,
     },
@@ -69,10 +63,10 @@ impl EventHandler for Handler {
         };
         let options = command.data.options.as_slice();
         let response = match command.data.name.as_str() {
-            "roll" => fun::roll_command(options).await,
-            "coin" => fun::coin_command().await,
-            "id" => info::get_id_command(options, command.guild_id.as_ref()).await,
-            "ttt" => tic_tac_toe::command(options, &ctx, &command.user).await,
+            "roll" => commands::fun::roll_command(options).await,
+            "coin" => commands::fun::coin_command().await,
+            "id" => commands::info::get_id_command(options, command.guild_id.as_ref()).await,
+            "ttt" => commands::tic_tac_toe::command(options, &ctx, &command.user).await,
             x => Err(anyhow::anyhow!(format!("Unknown Command: {x}"))),
         };
         match response {
@@ -102,8 +96,8 @@ impl EventHandler for Handler {
     }
     async fn ready(&self, ctx: Context, ready: Ready) {
         println!("{} is connected!", ready.user.tag());
-        drop(Command::set_global_application_commands(&ctx.http, commands).await);
-        // drop(id::GuildId(792489181774479400).set_application_commands(&ctx.http, commands).await);
+        drop(Command::set_global_application_commands(&ctx.http, commands::commands).await);
+        // drop(id::GuildId(792489181774479400).set_application_commands(&ctx.http, commands::commands).await);
     }
 }
 
@@ -149,9 +143,9 @@ async fn main() -> Result<(), anyhow::Error> {
         client_data.insert::<Prefix>(RwLock::new(Prefix::new("prefix.json".to_string())));
 
         #[cfg(feature = "tic_tac_toe")]
-        client_data.insert::<tic_tac_toe::Running>(RwLock::new(Vec::with_capacity(3)));
+        client_data.insert::<commands::tic_tac_toe::Running>(RwLock::new(Vec::with_capacity(3)));
         #[cfg(feature = "tic_tac_toe")]
-        client_data.insert::<tic_tac_toe::Queue>(RwLock::new(Vec::with_capacity(3)));
+        client_data.insert::<commands::tic_tac_toe::Queue>(RwLock::new(Vec::with_capacity(3)));
     }
 
     let shard_manager = client.shard_manager.clone();
