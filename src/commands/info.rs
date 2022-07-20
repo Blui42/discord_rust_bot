@@ -1,4 +1,3 @@
-use super::stringify_error;
 use anyhow::{Context as CTX, Result};
 use serenity::{
     model::{
@@ -9,33 +8,24 @@ use serenity::{
 };
 
 #[cfg(feature = "legacy_commands")]
-pub async fn ping(ctx: Context, msg: Message) -> Result<(), String> {
-    msg.channel_id
-        .say(&ctx.http, "pong!")
-        .await
-        .map_err(stringify_error)?;
+pub async fn ping(ctx: Context, msg: Message) -> Result<()> {
+    msg.channel_id.say(&ctx.http, "pong!").await?;
     Ok(())
 }
 
 #[cfg(feature = "legacy_commands")]
-pub async fn pic(ctx: Context, msg: Message) -> Result<(), String> {
+pub async fn pic(ctx: Context, msg: Message) -> Result<()> {
     if msg.mentions.is_empty() {
-        msg.channel_id
-            .say(&ctx.http, msg.author.face())
-            .await
-            .map_err(stringify_error)?;
+        msg.channel_id.say(&ctx.http, msg.author.face()).await?;
         return Ok(());
     }
     for i in &msg.mentions {
-        msg.channel_id
-            .say(&ctx.http, i.face())
-            .await
-            .map_err(stringify_error)?;
+        msg.channel_id.say(&ctx.http, i.face()).await?;
     }
     Ok(())
 }
 #[cfg(feature = "legacy_commands")]
-pub async fn id(ctx: Context, msg: Message) -> Result<(), String> {
+pub async fn id(ctx: Context, msg: Message) -> Result<()> {
     for target in msg.content.trim().split_whitespace() {
         if !(target.starts_with('<') && target.ends_with('>')) {
             msg.channel_id
@@ -43,15 +33,11 @@ pub async fn id(ctx: Context, msg: Message) -> Result<(), String> {
                     &ctx.http,
                     "That's not a valid target. Mention a user, role, channel, etc",
                 )
-                .await
-                .map_err(stringify_error)?;
+                .await?;
             continue;
         }
         let id = target.trim_matches(|c| !char::is_ascii_alphanumeric(&c));
-        msg.channel_id
-            .say(&ctx.http, id)
-            .await
-            .map_err(stringify_error)?;
+        msg.channel_id.say(&ctx.http, id).await?;
     }
     Ok(())
 }

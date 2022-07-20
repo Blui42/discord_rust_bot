@@ -1,4 +1,3 @@
-use super::stringify_error;
 use anyhow::{Context as CTX, Result};
 use rand::{
     distributions::{Distribution, Uniform},
@@ -10,7 +9,7 @@ use serenity::{
 };
 
 #[cfg(feature = "legacy_commands")]
-pub async fn roll(ctx: Context, msg: Message) -> Result<(), String> {
+pub async fn roll(ctx: Context, msg: Message) -> Result<()> {
     let mut an_iterator = msg.content.split('d');
     let rolls: u8 = an_iterator
         .next()
@@ -28,8 +27,7 @@ pub async fn roll(ctx: Context, msg: Message) -> Result<(), String> {
     if (sides < 2) || (rolls == 0) {
         msg.channel_id
             .say(&ctx.http, "Isn't that a bit pointless?")
-            .await
-            .map_err(stringify_error)?;
+            .await?;
         return Ok(());
     }
     let (total, min, max, summary) = roll_dice(rolls, sides);
@@ -44,8 +42,7 @@ pub async fn roll(ctx: Context, msg: Message) -> Result<(), String> {
                     .colour(0xff)
             })
         })
-        .await
-        .map_err(stringify_error)?;
+        .await?;
     Ok(())
 }
 fn roll_dice(rolls: u8, sides: u8) -> (u16, u8, u8, String) {
@@ -121,10 +118,7 @@ pub fn flip_coin() -> String {
     }
 }
 #[cfg(feature = "legacy_commands")]
-pub async fn coin(ctx: Context, msg: Message) -> Result<(), String> {
-    msg.channel_id
-        .say(&ctx.http, &flip_coin())
-        .await
-        .map_err(stringify_error)?;
+pub async fn coin(ctx: Context, msg: Message) -> Result<()> {
+    msg.channel_id.say(&ctx.http, &flip_coin()).await?;
     Ok(())
 }

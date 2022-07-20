@@ -10,10 +10,6 @@ use serenity::client::Context;
 use serenity::model::application::command::CommandOptionType;
 use serenity::model::channel::Message;
 
-#[allow(dead_code)]
-pub fn stringify_error<X: std::fmt::Debug>(error: X) -> String {
-    return format!("An Error occured: {:?}", error);
-}
 pub fn commands(commands: &mut CreateApplicationCommands) -> &mut CreateApplicationCommands {
     commands
         .create_application_command(|command| {
@@ -157,6 +153,6 @@ pub async fn parse(prefix: &str, mut msg: Message, ctx: Context) {
         _ => Ok(()),
     };
     if let Err(why) = command_result {
-        eprintln!("An Error occured: {}", why);
+        eprintln!("An Error occured: {:?}", why);
     }
 }
