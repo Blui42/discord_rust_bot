@@ -87,7 +87,7 @@ impl EventHandler for Handler {
                             .interaction_response_data(|message| {
                                 message
                                 .content(format!("An Error occured: {e}\nIf you find a consistent way to cause this error, please report it to my support discord."))
-                                .flags(interaction::MessageFlags::EPHEMERAL)
+                                .ephemeral(true)
                             })
                     })
                     .await.unwrap_or_else(|why| eprintln!("An Error occured: {why}"));
