@@ -36,7 +36,7 @@ pub async fn pic(ctx: Context, msg: Message) -> Result<(), String> {
 }
 #[cfg(feature = "legacy_commands")]
 pub async fn id(ctx: Context, msg: Message) -> Result<(), String> {
-    for target in msg.content.split_whitespace() {
+    for target in msg.content.trim().split_whitespace() {
         if !(target.starts_with('<') && target.ends_with('>')) {
             msg.channel_id
                 .say(
@@ -47,10 +47,7 @@ pub async fn id(ctx: Context, msg: Message) -> Result<(), String> {
                 .map_err(stringify_error)?;
             continue;
         }
-        let mut id = target.to_string();
-        for i in &["<", ">", "!", "#", "@", "&"] {
-            id = id.replace(i, "");
-        }
+        let id = target.trim_matches(|c| !char::is_ascii_alphanumeric(&c));
         msg.channel_id
             .say(&ctx.http, id)
             .await
