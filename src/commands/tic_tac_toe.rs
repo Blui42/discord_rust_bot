@@ -2,10 +2,10 @@
 use anyhow::{bail, Context as CTX, Result};
 use serenity::{
     model::{
-        id::UserId,
-        interactions::application_command::{
-            ApplicationCommandInteractionDataOption, ApplicationCommandInteractionDataOptionValue,
+        application::interaction::application_command::{
+            CommandDataOption, CommandDataOptionValue,
         },
+        id::UserId,
         prelude::*,
     },
     prelude::*,
@@ -13,11 +13,7 @@ use serenity::{
 use std::fmt;
 use tokio::sync::RwLock;
 
-pub async fn command(
-    options: &[ApplicationCommandInteractionDataOption],
-    ctx: &Context,
-    user: &User,
-) -> Result<String> {
+pub async fn command(options: &[CommandDataOption], ctx: &Context, user: &User) -> Result<String> {
     let subcommand = options.get(0).context("get subcommand")?;
     match subcommand.name.as_str() {
         "start" => start_game(subcommand.options.as_slice(), ctx, user).await,
@@ -63,13 +59,13 @@ pub async fn make_request(opponent: UserId, ctx: &Context, user: &User) -> Resul
 }
 
 pub async fn cancel_game(
-    options: &[ApplicationCommandInteractionDataOption],
+    options: &[CommandDataOption],
     ctx: &Context,
     user: &User,
 ) -> Result<String> {
     // This will be Some(opponent) if the user spefified an opponent, otherwise None.
     let opponent = if let Some(a) = options.get(0) {
-        if let ApplicationCommandInteractionDataOptionValue::User(opponent, _) =
+        if let CommandDataOptionValue::User(opponent, _) =
             a.resolved.as_ref().context("Missing argument `opponent`")?
         {
             Some(&opponent.id)
@@ -113,13 +109,13 @@ pub async fn cancel_game(
 }
 
 pub async fn start_game(
-    options: &[ApplicationCommandInteractionDataOption],
+    options: &[CommandDataOption],
     ctx: &Context,
     user: &User,
 ) -> Result<String> {
     // This will be Some(opponent) if the user spefified an opponent, otherwise None.
     let opponent = if let Some(a) = options.get(0) {
-        if let ApplicationCommandInteractionDataOptionValue::User(opponent, _) =
+        if let CommandDataOptionValue::User(opponent, _) =
             a.resolved.as_ref().context("get field `opponent`")?
         {
             Some(opponent.id)
@@ -155,7 +151,7 @@ pub async fn start_game(
 }
 
 pub async fn mark_field(
-    options: &[ApplicationCommandInteractionDataOption],
+    options: &[CommandDataOption],
     ctx: &Context,
     user: &User,
 ) -> Result<String> {

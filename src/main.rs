@@ -9,7 +9,13 @@ use serenity::{
     model::{
         channel::Message,
         gateway::Ready,
-        interactions::{application_command::ApplicationCommand, Interaction},
+        application::{
+            command::Command,
+            interaction::{
+                Interaction,
+                self,
+            },
+        },
         prelude::*,
     },
     prelude::*,
@@ -73,7 +79,7 @@ impl EventHandler for Handler {
             Ok(msg) => command
                 .create_interaction_response(&ctx.http, |response| {
                     response
-                        .kind(interactions::InteractionResponseType::ChannelMessageWithSource)
+                        .kind(interaction::InteractionResponseType::ChannelMessageWithSource)
                         .interaction_response_data(|message| message.content(msg))
                 })
                 .await
@@ -83,11 +89,11 @@ impl EventHandler for Handler {
                 command
                     .create_interaction_response(&ctx.http, |response| {
                         response
-                            .kind(interactions::InteractionResponseType::ChannelMessageWithSource)
+                            .kind(interaction::InteractionResponseType::ChannelMessageWithSource)
                             .interaction_response_data(|message| {
                                 message
                                 .content(format!("An Error occured: {e}\nIf you find a consistent way to cause this error, please report it to my support discord."))
-                                .flags(interactions::InteractionApplicationCommandCallbackDataFlags::EPHEMERAL)
+                                .flags(interaction::MessageFlags::EPHEMERAL)
                             })
                     })
                     .await.unwrap_or_else(|why| eprintln!("An Error occured: {why}"));
@@ -96,7 +102,7 @@ impl EventHandler for Handler {
     }
     async fn ready(&self, ctx: Context, ready: Ready) {
         println!("{} is connected!", ready.user.tag());
-        drop(ApplicationCommand::set_global_application_commands(&ctx.http, commands).await);
+        drop(Command::set_global_application_commands(&ctx.http, commands).await);
         // drop(id::GuildId(792489181774479400).set_application_commands(&ctx.http, commands).await);
     }
 }

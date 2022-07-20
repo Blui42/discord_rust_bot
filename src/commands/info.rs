@@ -2,8 +2,8 @@ use crate::stringify_error;
 use anyhow::{Context as CTX, Result};
 use serenity::{
     model::{
-        channel::Message, id::GuildId,
-        interactions::application_command::ApplicationCommandInteractionDataOption,
+        application::interaction::application_command::CommandDataOption, channel::Message,
+        id::GuildId,
     },
     prelude::*,
 };
@@ -60,7 +60,7 @@ pub async fn id(ctx: Context, msg: Message) -> Result<(), String> {
 }
 
 pub async fn get_id_command(
-    options: &[ApplicationCommandInteractionDataOption],
+    options: &[CommandDataOption],
     guild_id: Option<&GuildId>,
 ) -> Result<String> {
     dbg!(options);

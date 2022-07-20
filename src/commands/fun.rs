@@ -5,10 +5,7 @@ use rand::{
     prelude::*,
 };
 use serenity::{
-    model::{
-        channel::Message,
-        interactions::application_command::ApplicationCommandInteractionDataOption,
-    },
+    model::{application::interaction::application_command::CommandDataOption, channel::Message},
     prelude::*,
 };
 
@@ -74,7 +71,7 @@ fn roll_dice(rolls: u8, sides: u8) -> (u16, u8, u8, String) {
     }
     (total, min, max, summary)
 }
-pub async fn roll_command(options: &[ApplicationCommandInteractionDataOption]) -> Result<String> {
+pub async fn roll_command(options: &[CommandDataOption]) -> Result<String> {
     let rolls: i64 = options
         .get(0)
         .context("missing rolls field")?

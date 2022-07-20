@@ -7,8 +7,8 @@ pub mod level_cookies;
 pub mod tic_tac_toe;
 use serenity::builder::CreateApplicationCommands;
 use serenity::client::Context;
+use serenity::model::application::command::CommandOptionType;
 use serenity::model::channel::Message;
-use serenity::model::interactions::application_command::ApplicationCommandOptionType;
 
 #[allow(dead_code)]
 pub fn stringify_error<X: std::fmt::Debug>(error: X) -> String {
@@ -24,30 +24,30 @@ pub fn commands(commands: &mut CreateApplicationCommands) -> &mut CreateApplicat
                     option
                         .name("server")
                         .description("Get ID of the server you're on")
-                        .kind(ApplicationCommandOptionType::SubCommand)
+                        .kind(CommandOptionType::SubCommand)
                 })
                 .create_option(|option| {
                     option
                         .name("user")
                         .description("Get ID of a user or role")
-                        .kind(ApplicationCommandOptionType::SubCommand)
+                        .kind(CommandOptionType::SubCommand)
                         .create_sub_option(|sub_option| {
                             sub_option
                                 .name("target")
                                 .description("The user or role to get the ID of")
-                                .kind(ApplicationCommandOptionType::Mentionable)
+                                .kind(CommandOptionType::Mentionable)
                         })
                 })
                 .create_option(|option| {
                     option
                         .name("channel")
                         .description("Get the user of a Channel")
-                        .kind(ApplicationCommandOptionType::SubCommand)
+                        .kind(CommandOptionType::SubCommand)
                         .create_sub_option(|sub_option| {
                             sub_option
                                 .name("target")
                                 .description("The Channel to get the ID of")
-                                .kind(ApplicationCommandOptionType::Channel)
+                                .kind(CommandOptionType::Channel)
                         })
                 })
         })
@@ -59,14 +59,14 @@ pub fn commands(commands: &mut CreateApplicationCommands) -> &mut CreateApplicat
                     option
                         .name("rolls")
                         .description("The amount of dice to roll")
-                        .kind(ApplicationCommandOptionType::Integer)
+                        .kind(CommandOptionType::Integer)
                         .required(true)
                 })
                 .create_option(|option| {
                     option
                         .name("sides")
                         .description("the amount of sides the thrown dice have")
-                        .kind(ApplicationCommandOptionType::Integer)
+                        .kind(CommandOptionType::Integer)
                         .required(true)
                 })
         })
@@ -79,24 +79,24 @@ pub fn commands(commands: &mut CreateApplicationCommands) -> &mut CreateApplicat
                     option
                         .name("start")
                         .description("Start a new game")
-                        .kind(ApplicationCommandOptionType::SubCommand)
+                        .kind(CommandOptionType::SubCommand)
                         .create_sub_option(|sub_option| {
                             sub_option
                                 .name("opponent")
                                 .description("Your Opponent")
-                                .kind(ApplicationCommandOptionType::User)
+                                .kind(CommandOptionType::User)
                         })
                 })
                 .create_option(|option| {
                     option
                         .name("set")
                         .description("Set your marker on the playing field")
-                        .kind(ApplicationCommandOptionType::SubCommand)
+                        .kind(CommandOptionType::SubCommand)
                         .create_sub_option(|sub_option| {
                             sub_option
                                 .name("field")
                                 .description("Should be from 1-9")
-                                .kind(ApplicationCommandOptionType::Integer)
+                                .kind(CommandOptionType::Integer)
                                 .required(true)
                         })
                 })
@@ -104,12 +104,12 @@ pub fn commands(commands: &mut CreateApplicationCommands) -> &mut CreateApplicat
                     option
                         .name("cancel")
                         .description("Cancel a upcoming or ongoing game")
-                        .kind(ApplicationCommandOptionType::SubCommand)
+                        .kind(CommandOptionType::SubCommand)
                         .create_sub_option(|sub_option| {
                             sub_option
                                 .name("opponent")
                                 .description("The opponent of the game you want to cancel")
-                                .kind(ApplicationCommandOptionType::User)
+                                .kind(CommandOptionType::User)
                         })
                 })
         })
