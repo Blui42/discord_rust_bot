@@ -67,7 +67,7 @@ impl EventHandler for Handler {
             "coin" => commands::fun::coin_command().await,
             "id" => commands::info::get_id_command(options, command.guild_id.as_ref()).await,
             "ttt" => commands::tic_tac_toe::command(options, &ctx, &command.user).await,
-            x => Err(anyhow::anyhow!(format!("Unknown Command: {x}"))),
+            x => Err(anyhow::anyhow!("Unknown Command: {x}")),
         };
         match response {
             Ok(msg) => command
