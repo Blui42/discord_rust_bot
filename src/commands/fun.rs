@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use anyhow::{Context as CTX, Result};
 use rand::{
     distributions::{Distribution, Uniform},
@@ -68,7 +70,7 @@ fn roll_dice(rolls: u8, sides: u8) -> (u16, u8, u8, String) {
     }
     (total, min, max, summary)
 }
-pub async fn roll_command(options: &[CommandDataOption]) -> Result<String> {
+pub async fn roll_command<'a>(options: &'a [CommandDataOption]) -> Result<Cow<'a, str>> {
     let rolls: i64 = options
         .get(0)
         .context("missing rolls field")?
@@ -86,35 +88,35 @@ pub async fn roll_command(options: &[CommandDataOption]) -> Result<String> {
         .as_i64()
         .context("sides was not a number")?;
     if rolls < 0 || sides < 0 {
-        Ok("<= !em pleH <=".to_string())
+        Ok("<= !em pleH <=".into())
     } else if rolls == 0 {
-        Ok("Rolled no dice. (What did you expect?)".to_string())
+        Ok("Rolled no dice. (What did you expect?)".into())
     } else if sides == 0 {
-        Ok("0-sided dice are too dangerous to use.".to_string())
+        Ok("0-sided dice are too dangerous to use.".into())
     } else if sides == 1 {
-        Ok("*Throws a ball*".to_string())
+        Ok("*Throws a ball*".into())
     } else if rolls > 255 || sides > 255 {
-        Ok("A number that I'm too lazy to calculate (Try numbers 255 and below)".to_string())
+        Ok("A number that I'm too lazy to calculate (Try numbers 255 and below)".into())
     } else {
         let (total, min, max, summary) = roll_dice(rolls.to_le_bytes()[0], sides.to_le_bytes()[0]);
-        Ok(format!("**Rolled {rolls} {sides}-sided dice.** \n**Result: `{total}`**\n Rolled {min}x1 and {max}x{sides} \n\n Detailed: ```{summary}```"))
+        Ok(format!("**Rolled {rolls} {sides}-sided dice.** \n**Result: `{total}`**\n Rolled {min}x1 and {max}x{sides} \n\n Detailed: ```{summary}```").into())
     }
 }
-pub async fn coin_command() -> Result<String> {
-    Ok(flip_coin())
+pub async fn coin_command() -> Result<Cow<'static, str>> {
+    Ok(flip_coin().into())
 }
 
 #[inline]
-pub fn flip_coin() -> String {
+pub fn flip_coin() -> &'static str {
     let number: u8 = random();
     if number > 128 {
-        "It landed tails!".to_string()
+        "It landed tails!"
     } else if number < 127 {
-        "It landed heads!".to_string()
+        "It landed heads!"
     } else if number == 127 {
-        "It didn't tip over!".to_string()
+        "It didn't tip over!"
     } else {
-        "It fell under the table!".to_string()
+        "It fell under the table!"
     }
 }
 #[cfg(feature = "legacy_commands")]

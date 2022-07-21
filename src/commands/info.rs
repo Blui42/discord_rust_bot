@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use anyhow::{Context as CTX, Result};
 use serenity::{
     model::{
@@ -42,10 +44,10 @@ pub async fn id(ctx: Context, msg: Message) -> Result<()> {
     Ok(())
 }
 
-pub async fn get_id_command(
-    options: &[CommandDataOption],
+pub async fn get_id_command<'a>(
+    options: &'a [CommandDataOption],
     guild_id: Option<&GuildId>,
-) -> Result<String> {
+) -> Result<Cow<'a, str>> {
     dbg!(options);
     let target_type = options.get(0).context("get id target type")?;
     match target_type.name.as_str() {
@@ -60,11 +62,11 @@ pub async fn get_id_command(
             .context("get value of seccond argument")?
             .as_str()
             .context("get string representation of 2nd arg")?
-            .to_string()),
+            .into()),
         "server" => match guild_id {
-            Some(a) => Ok(a.0.to_string()),
-            None => Ok("This can only be used while on a server".to_string()),
+            Some(a) => Ok(a.0.to_string().into()),
+            None => Ok("This can only be used while on a server".into()),
         },
-        _ => Ok("Something went wrong".to_string()),
+        _ => Ok("Something went wrong".into()),
     }
 }

@@ -10,22 +10,30 @@ use serenity::{
     },
     prelude::*,
 };
-use std::fmt;
+use std::{borrow::Cow, fmt};
 use tokio::sync::RwLock;
 
-pub async fn command(options: &[CommandDataOption], ctx: &Context, user: &User) -> Result<String> {
+pub async fn command<'a>(
+    options: &'a [CommandDataOption],
+    ctx: &Context,
+    user: &User,
+) -> Result<Cow<'a, str>> {
     let subcommand = options.get(0).context("get subcommand")?;
     match subcommand.name.as_str() {
         "start" => start_game(subcommand.options.as_slice(), ctx, user).await,
         "set" => mark_field(subcommand.options.as_slice(), ctx, user).await,
         "cancel" => cancel_game(subcommand.options.as_slice(), ctx, user).await,
-        _ => Ok("Unknown Subcommand".to_string()),
+        _ => Ok("Unknown Subcommand".into()),
     }
 }
 
-pub async fn make_request(opponent: UserId, ctx: &Context, user: &User) -> Result<String> {
+pub async fn make_request(
+    opponent: UserId,
+    ctx: &Context,
+    user: &User,
+) -> Result<Cow<'static, str>> {
     if opponent == user.id {
-        return Ok("That would be kind of sad".to_string());
+        return Ok("That would be kind of sad".into());
     }
     let data = ctx.data.read().await;
     let current_games = data
@@ -38,10 +46,11 @@ pub async fn make_request(opponent: UserId, ctx: &Context, user: &User) -> Resul
             return Ok(format!(
                 "You are already in a game against {}!",
                 oppnent.to_user(&ctx.http).await?.tag()
-            ));
+            )
+            .into());
         }
         if game.has_player(opponent) {
-            return Ok(format!("{} is already in a game!", user.tag()));
+            return Ok(format!("{} is already in a game!", user.tag()).into());
         }
     }
     let game_queue = data.get::<Queue>().context("get game queue")?.read().await;
@@ -50,19 +59,20 @@ pub async fn make_request(opponent: UserId, ctx: &Context, user: &User) -> Resul
             return Ok(format!(
                 "You have already requested a game against {}!",
                 opponent.to_user(&ctx.http).await?.tag()
-            ));
+            )
+            .into());
         }
     }
     let mut game_queue = data.get::<Queue>().context("Get game queue")?.write().await;
     game_queue.push(TicTacToe::new(user.id, opponent));
-    Ok(format!("You challanged {}!", opponent.mention()))
+    Ok(format!("You challanged {}!", opponent.mention()).into())
 }
 
-pub async fn cancel_game(
-    options: &[CommandDataOption],
+pub async fn cancel_game<'a>(
+    options: &'a [CommandDataOption],
     ctx: &Context,
     user: &User,
-) -> Result<String> {
+) -> Result<Cow<'a, str>> {
     // This will be Some(opponent) if the user spefified an opponent, otherwise None.
     let opponent = if let Some(a) = options.get(0) {
         if let CommandDataOptionValue::User(opponent, _) =
@@ -89,7 +99,7 @@ pub async fn cancel_game(
             .write()
             .await
             .swap_remove(index);
-        return Ok("Cancelled game.".to_string());
+        return Ok("Cancelled game.".into());
     }
 
     let running_games = data
@@ -103,16 +113,16 @@ pub async fn cancel_game(
             .write()
             .await
             .swap_remove(index);
-        return Ok("You gave up.".to_string());
+        return Ok("You gave up.".into());
     }
-    Ok("There was no game to cancel".to_string())
+    Ok("There was no game to cancel".into())
 }
 
-pub async fn start_game(
-    options: &[CommandDataOption],
+pub async fn start_game<'a>(
+    options: &'a [CommandDataOption],
     ctx: &Context,
     user: &User,
-) -> Result<String> {
+) -> Result<Cow<'a, str>> {
     // This will be Some(opponent) if the user spefified an opponent, otherwise None.
     let opponent = if let Some(a) = options.get(0) {
         if let CommandDataOptionValue::User(opponent, _) =
@@ -142,19 +152,19 @@ pub async fn start_game(
             .write()
             .await;
         running_games.push(game);
-        Ok("Game initiated! Use `/ttt set <1-9>` to play!".to_string())
+        Ok("Game initiated! Use `/ttt set <1-9>` to play!".into())
     } else if let Some(opp) = opponent {
         make_request(opp, ctx, user).await
     } else {
-        Ok("You have no incoming requests".to_string())
+        Ok("You have no incoming requests".into())
     }
 }
 
-pub async fn mark_field(
-    options: &[CommandDataOption],
+pub async fn mark_field<'a>(
+    options: &'a [CommandDataOption],
     ctx: &Context,
     user: &User,
-) -> Result<String> {
+) -> Result<Cow<'a, str>> {
     let data = ctx.data.read().await;
     let mut games = data
         .get::<Running>()
@@ -169,7 +179,7 @@ pub async fn mark_field(
     {
         a
     } else {
-        return Ok("You don't have a running game!".to_string());
+        return Ok("You don't have a running game!".into());
     };
     let field_number = options
         .get(0)
@@ -182,7 +192,7 @@ pub async fn mark_field(
         .try_into()
         .unwrap_or(10_usize);
     if field_number == 0 || field_number > 9 {
-        return Ok("That is not a valid field!".to_string());
+        return Ok("That is not a valid field!".into());
     }
     if *game
         .get(field_number)
@@ -191,7 +201,7 @@ pub async fn mark_field(
     {
         let player = game.player_number(user.id);
         if game.previous_player == player {
-            return Ok("It's not your turn!".to_string());
+            return Ok("It's not your turn!".into());
         }
         game.insert(player, field_number as usize)
             .context("index out of bounds")?;
@@ -200,10 +210,10 @@ pub async fn mark_field(
 
     let winner = game.check_all();
     if winner == 0 {
-        Ok(format!("{:#}", game))
+        Ok(format!("{:#}", game).into())
     } else {
         let game = games.swap_remove(index);
-        Ok(format!("Player {winner} has won!\nPlaying field: \n{game}"))
+        Ok(format!("Player {winner} has won!\nPlaying field: \n{game}").into())
     }
 }
 
