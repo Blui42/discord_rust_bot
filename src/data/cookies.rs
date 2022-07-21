@@ -3,12 +3,12 @@
 use serde_json::{self, Map, Value};
 use std::fs;
 
-pub struct Cookies {
+pub struct Cookies<'a> {
     data: Map<String, Value>,
-    path: String,
+    path: &'a str,
 }
 
-impl Cookies {
+impl<'a> Cookies<'a> {
     pub fn get(&self, user: u64) -> Option<u64> {
         let a = self.data.get(&user.to_string())?;
         a.as_u64()
@@ -31,9 +31,10 @@ impl Cookies {
         self.data.insert(user.to_string(), Value::from(0_u64));
     }
 
-    pub fn new(path: String) -> Self {
-        let file_contents = fs::read_to_string(&path).unwrap_or_else(|_| "{}".to_string());
-        let data: Map<String, Value> = serde_json::from_str(&file_contents).unwrap_or_default();
+    pub fn new(path: &'a str) -> Self {
+        let file = fs::read_to_string(path);
+        let file_contents: &str = file.as_ref().map_or("{}", |x| x);
+        let data: Map<String, Value> = serde_json::from_str(file_contents).unwrap_or_default();
         Self { data, path }
     }
 
@@ -44,7 +45,7 @@ impl Cookies {
         Ok(())
     }
 }
-impl Drop for Cookies {
+impl<'a> Drop for Cookies<'a> {
     fn drop(&mut self) {
         if let Ok(file_content) = serde_json::to_string_pretty(&self.data) {
             if let Err(why) = fs::write(&self.path, file_content) {

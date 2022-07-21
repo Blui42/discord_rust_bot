@@ -6,12 +6,12 @@ use serenity::{
 use std::fs;
 use tokio::sync::RwLock;
 
-pub struct Prefix {
+pub struct Prefix<'a> {
     prefix: Map<String, Value>,
-    path: String,
+    path: &'a str,
 }
 
-impl Prefix {
+impl<'a> Prefix<'a> {
     pub fn get(&self, guild: u64) -> Option<String> {
         if let Some(a) = self.prefix.get(&guild.to_string())?.as_str() {
             // check if the guild has a prefix
@@ -30,21 +30,22 @@ impl Prefix {
         self.prefix
             .insert(guild.to_string(), Value::String(prefix.to_string()));
     }
-    pub fn new(path: String) -> Self {
-        let file_contents = fs::read_to_string(&path).unwrap_or_else(|_| "{}".to_string());
+    pub fn new(path: &'a str) -> Self {
+        let file = fs::read_to_string(&path);
+        let file_contents: &str = file.as_ref().map_or("{}", |x| x);
         let prefix: serde_json::Map<String, Value> =
-            serde_json::from_str(&file_contents).unwrap_or_default();
+            serde_json::from_str(file_contents).unwrap_or_default();
         Self { prefix, path }
     }
     pub async fn save(&self) -> Result<(), std::io::Error> {
         if let Ok(file_info) = serde_json::to_string_pretty(&self.prefix) {
-            tokio::fs::write(&self.path, file_info).await?;
+            tokio::fs::write(self.path, file_info).await?;
         }
         Ok(())
     }
 }
 
-impl Drop for Prefix {
+impl<'a> Drop for Prefix<'a> {
     fn drop(&mut self) {
         if let Ok(file_content) = serde_json::to_string_pretty(&self.prefix) {
             if let Err(why) = fs::write(&self.path, file_content) {
@@ -54,7 +55,7 @@ impl Drop for Prefix {
     }
 }
 
-impl serenity::prelude::TypeMapKey for Prefix {
+impl serenity::prelude::TypeMapKey for Prefix<'static> {
     type Value = RwLock<Self>;
 }
 

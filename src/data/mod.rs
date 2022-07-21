@@ -9,22 +9,24 @@ use rand::{thread_rng, Rng};
 use serenity::{client::Context, model::channel::Message};
 use tokio::sync::RwLock;
 
-pub struct Data {
+pub struct Data<'l, 'c> {
     #[cfg(feature = "xp")]
-    pub level: level::Level,
+    pub level: level::Level<'l>,
 
     #[cfg(feature = "cookies")]
-    pub cookies: cookies::Cookies,
+    pub cookies: cookies::Cookies<'c>,
 }
-impl Data {
+impl Data<'static, 'static> {
     pub fn new() -> Self {
         Self {
             #[cfg(feature = "xp")]
-            level: level::Level::new("level.json".to_string()),
+            level: level::Level::new("level.json"),
             #[cfg(feature = "cookies")]
-            cookies: cookies::Cookies::new("cookies.json".to_string()),
+            cookies: cookies::Cookies::new("cookies.json"),
         }
     }
+}
+impl<'l, 'c> Data<'l, 'c> {
     pub async fn save(&self) -> Result<(), std::io::Error> {
         tokio::try_join!(
             #[cfg(feature = "xp")]
@@ -37,7 +39,7 @@ impl Data {
     }
 }
 
-impl serenity::prelude::TypeMapKey for Data {
+impl serenity::prelude::TypeMapKey for Data<'static, 'static> {
     type Value = RwLock<Self>;
 }
 

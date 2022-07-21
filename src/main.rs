@@ -2,6 +2,7 @@
 
 mod commands;
 mod data;
+use anyhow::Context as CTX;
 use data::{config::Config, prefix::Prefix, Data};
 use dotenv::dotenv;
 use serenity::{
@@ -107,8 +108,8 @@ async fn main() -> Result<(), anyhow::Error> {
 
     let token: String = env::var_os("DISCORD_TOKEN")
     .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, 
-        "Put DISCORD_TOKEN=YourTokenHere into the .env file or add a DISCORD_TOKEN variable to the enviroment"))?.into_string()
-        .map_err(|_|io::Error::new(io::ErrorKind::Other, "DISCORD_TOKEN contained non-UTF8 characters"))?;
+        "Put DISCORD_TOKEN=YourTokenHere into the .env file or add a DISCORD_TOKEN variable to the enviroment"))?.into_string().ok()
+        .context("DISCORD_TOKEN contained non-UTF8 characters")?;
     let config = data::config::Config::from_file("config.toml").unwrap_or_default();
 
     // Try to read Application ID from config.toml.
@@ -116,7 +117,7 @@ async fn main() -> Result<(), anyhow::Error> {
     let application_id = match config.application_id {
         0 => {
             serenity::utils::parse_token(&token)
-                .expect("Application ID was not given and could not be derived from token.")
+                .context("Application ID was not given and could not be derived from token.")?
                 .0
                  .0
         }
@@ -140,7 +141,7 @@ async fn main() -> Result<(), anyhow::Error> {
         client_data.insert::<Config>(config);
 
         #[cfg(feature = "custom_prefix")]
-        client_data.insert::<Prefix>(RwLock::new(Prefix::new("prefix.json".to_string())));
+        client_data.insert::<Prefix>(RwLock::new(Prefix::new("prefix.json")));
 
         #[cfg(feature = "tic_tac_toe")]
         client_data.insert::<commands::tic_tac_toe::Running>(RwLock::new(Vec::with_capacity(3)));
