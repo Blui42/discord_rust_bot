@@ -19,8 +19,8 @@ pub async fn pic(ctx: Context, msg: Message) -> Result<()> {
         msg.channel_id.say(&ctx.http, msg.author.face()).await?;
         return Ok(());
     }
-    for i in &msg.mentions {
-        msg.channel_id.say(&ctx.http, i.face()).await?;
+    for user in &msg.mentions {
+        msg.channel_id.say(&ctx.http, user.face()).await?;
     }
     Ok(())
 }

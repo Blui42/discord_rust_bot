@@ -53,17 +53,20 @@ impl Level {
         Self { data, path }
     }
 
-    pub fn save(&self) {
+    pub async fn save(&self) -> Result<(), std::io::Error> {
         if let Ok(file_info) = serde_json::to_string_pretty(&self.data) {
-            if let Err(why) = fs::write(&self.path, file_info) {
-                eprintln!("Error writing to file: {}", why);
-            }
+            tokio::fs::write(&self.path, file_info).await?;
         }
+        Ok(())
     }
 }
 impl Drop for Level {
     fn drop(&mut self) {
-        self.save();
+        if let Ok(file_content) = serde_json::to_string_pretty(&self.data) {
+            if let Err(why) = fs::write(&self.path, file_content) {
+                eprintln!("Error writing to file: {why}");
+            }
+        }
     }
 }
 

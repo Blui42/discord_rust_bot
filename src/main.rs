@@ -166,33 +166,31 @@ async fn main() -> Result<(), anyhow::Error> {
             loop {
                 sleep(Duration::from_secs(600)).await;
                 println!("Preparing to save...");
-                let res: Result<_, ()> = tokio::try_join!(
+                let res: Result<_, std::io::Error> = tokio::try_join!(
                     async {
                         client_data
                             .read()
                             .await
-                            .get::<Data>()
-                            .ok_or(())?
+                            .get::<Data>().expect("Missing Data for saving!")
                             .read()
                             .await
-                            .save();
-                        Ok(())
+                            .save()
+                            .await
                     },
                     #[cfg(feature = "custom_prefix")]
                     async {
                         client_data
                             .read()
                             .await
-                            .get::<Prefix>()
-                            .ok_or(())?
+                            .get::<Prefix>().expect("Missing Prefix Data for saving!")
                             .read()
                             .await
-                            .save();
-                        Ok(())
+                            .save()
+                            .await
                     }
                 );
-                if res.is_err() {
-                    eprintln!("Something went wrong trying to save. Disabled saving.");
+                if let Err(why) = res {
+                    eprintln!("Something went wrong trying to save. Disabled saving. \nMore info: {why}");
                     return;
                 }
             }

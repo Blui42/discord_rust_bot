@@ -25,17 +25,15 @@ impl Data {
             cookies: cookies::Cookies::new("cookies.json".to_string()),
         }
     }
-    pub fn save(&self) {
-        #[cfg(feature = "xp")]
-        {
-            println!("Saving levels...");
-            self.level.save();
-        }
-        #[cfg(feature = "cookies")]
-        {
-            println!("Saving cookies...");
-            self.cookies.save();
-        }
+    pub async fn save(&self) -> Result<(), std::io::Error> {
+        tokio::try_join!(
+            #[cfg(feature = "xp")]
+            self.level.save(),
+            #[cfg(feature = "cookies")]
+            self.cookies.save(),
+        )?;
+
+        Ok(())
     }
 }
 
