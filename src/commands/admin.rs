@@ -30,26 +30,27 @@ pub async fn kick(ctx: Context, msg: Message) -> Result<()> {
         msg.channel_id.say(&ctx.http, "I won't kick myself").await?;
         return Ok(());
     }
-    let a = msg.guild(&ctx.cache).context("Unknown Cache Error")?;
-    for i in &msg.mentions {
-        if a.kick_with_reason(
-            &ctx.http,
-            i.id,
-            &format!("Kicked by `{}`", msg.author.tag()),
-        )
-        .await
-        .is_ok()
+    let guild = msg.guild(&ctx.cache).context("Unknown Cache Error")?;
+    for user in &msg.mentions {
+        if guild
+            .kick_with_reason(
+                &ctx.http,
+                user.id,
+                &format!("Kicked by `{}`", msg.author.tag()),
+            )
+            .await
+            .is_ok()
         {
             if let Err(why) = msg
                 .channel_id
-                .say(&ctx.http, format!("Kicked `{}`", i.tag()))
+                .say(&ctx.http, format!("Kicked `{}`", user.tag()))
                 .await
             {
                 eprintln!("An Error occured: {}", why);
             }
         } else if let Err(why) = msg
             .channel_id
-            .say(&ctx.http, format!("Can't kick `{}`", i.tag()))
+            .say(&ctx.http, format!("Can't kick `{}`", user.tag()))
             .await
         {
             eprintln!("An Error occured: {}", why);
@@ -81,19 +82,19 @@ pub async fn unban(ctx: Context, msg: Message) -> Result<()> {
             .await?;
         return Ok(());
     }
-    let a = msg.guild(&ctx.cache).context("Unknown Cache Error")?;
-    for i in &msg.mentions {
-        if a.unban(&ctx.http, i.id).await.is_ok() {
+    let guild = msg.guild(&ctx.cache).context("Unknown Cache Error")?;
+    for user in &msg.mentions {
+        if guild.unban(&ctx.http, user.id).await.is_ok() {
             if let Err(why) = msg
                 .channel_id
-                .say(&ctx.http, format!("Unbanned `{}`", i.tag()))
+                .say(&ctx.http, format!("Unbanned `{}`", user.tag()))
                 .await
             {
                 eprintln!("An Error occured: {}", why);
             }
         } else if let Err(why) = msg
             .channel_id
-            .say(&ctx.http, format!("Can't unban `{}`", i.tag()))
+            .say(&ctx.http, format!("Can't unban `{}`", user.tag()))
             .await
         {
             eprintln!("An Error occured: {}", why);
@@ -129,27 +130,28 @@ pub async fn ban(ctx: Context, msg: Message) -> Result<()> {
         msg.channel_id.say(&ctx.http, "I won't ban myself").await?;
         return Ok(());
     }
-    let a = msg.guild(&ctx.cache).context("Unknown Cache Error")?;
-    for i in &msg.mentions {
-        if a.ban_with_reason(
-            &ctx.http,
-            i.id,
-            0,
-            &format!("Banned by `{}`", msg.author.tag()),
-        )
-        .await
-        .is_ok()
+    let guild = msg.guild(&ctx.cache).context("Unknown Cache Error")?;
+    for user in &msg.mentions {
+        if guild
+            .ban_with_reason(
+                &ctx.http,
+                user.id,
+                0,
+                &format!("Banned by `{}`", msg.author.tag()),
+            )
+            .await
+            .is_ok()
         {
             if let Err(why) = msg
                 .channel_id
-                .say(&ctx.http, format!("Banned `{}`", i.tag()))
+                .say(&ctx.http, format!("Banned `{}`", user.tag()))
                 .await
             {
                 eprintln!("An Error occured: {}", why);
             }
         } else if let Err(why) = msg
             .channel_id
-            .say(&ctx.http, format!("Can't ban `{}`", i.tag()))
+            .say(&ctx.http, format!("Can't ban `{}`", user.tag()))
             .await
         {
             eprintln!("An Error occured: {}", why);

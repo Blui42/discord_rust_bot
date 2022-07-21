@@ -52,11 +52,11 @@ fn roll_dice(rolls: u8, sides: u8) -> (u16, u8, u8, String) {
     let mut summary: String = String::new();
     let mut min: u8 = 0;
     let mut max: u8 = 0;
-    for i in 1..=rolls {
+    for roll in 1..=rolls {
         let number: u8 = between.sample(&mut rng);
         total += u16::from(number);
         summary += &number.to_string();
-        if i != rolls {
+        if roll != rolls {
             summary += ", ";
         }
         if number == sides {
