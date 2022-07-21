@@ -7,10 +7,7 @@ use data::{config::Config, prefix::Prefix, Data};
 use dotenv::dotenv;
 use serenity::{
     model::{
-        application::{
-            command::Command,
-            interaction::Interaction,
-        },
+        application::{command::Command, interaction::Interaction},
         prelude::*,
     },
     prelude::*,
@@ -107,7 +104,7 @@ async fn main() -> Result<(), anyhow::Error> {
     dotenv().ok(); // place variables from .env into this enviroment
 
     let token: String = env::var_os("DISCORD_TOKEN")
-    .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, 
+    .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound,
         "Put DISCORD_TOKEN=YourTokenHere into the .env file or add a DISCORD_TOKEN variable to the enviroment"))?.into_string().ok()
         .context("DISCORD_TOKEN contained non-UTF8 characters")?;
     let config = data::config::Config::from_file("config.toml").unwrap_or_default();
@@ -172,7 +169,8 @@ async fn main() -> Result<(), anyhow::Error> {
                         client_data
                             .read()
                             .await
-                            .get::<Data>().expect("Missing Data for saving!")
+                            .get::<Data>()
+                            .expect("Missing Data for saving!")
                             .read()
                             .await
                             .save()
@@ -183,7 +181,8 @@ async fn main() -> Result<(), anyhow::Error> {
                         client_data
                             .read()
                             .await
-                            .get::<Prefix>().expect("Missing Prefix Data for saving!")
+                            .get::<Prefix>()
+                            .expect("Missing Prefix Data for saving!")
                             .read()
                             .await
                             .save()
@@ -191,7 +190,9 @@ async fn main() -> Result<(), anyhow::Error> {
                     }
                 );
                 if let Err(why) = res {
-                    eprintln!("Something went wrong trying to save. Disabled saving. \nMore info: {why}");
+                    eprintln!(
+                        "Something went wrong trying to save. Disabled saving. \nMore info: {why}"
+                    );
                     return;
                 }
             }

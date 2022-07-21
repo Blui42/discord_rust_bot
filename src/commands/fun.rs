@@ -70,7 +70,7 @@ fn roll_dice(rolls: u8, sides: u8) -> (u16, u8, u8, String) {
     }
     (total, min, max, summary)
 }
-pub async fn roll_command<'a>(options: &'a [CommandDataOption]) -> Result<Cow<'a, str>> {
+pub async fn roll_command(options: &[CommandDataOption]) -> Result<Cow<'_, str>> {
     let rolls: i64 = options
         .get(0)
         .context("missing rolls field")?
