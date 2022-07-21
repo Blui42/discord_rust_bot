@@ -133,8 +133,7 @@ async fn main() -> Result<(), anyhow::Error> {
 
     {
         let mut client_data = client.data.write().await;
-        let data = Data::new();
-        client_data.insert::<Data>(RwLock::new(data));
+        client_data.insert::<Data>(RwLock::new(Data::new()));
         client_data.insert::<Config>(config);
 
         #[cfg(feature = "custom_prefix")]
