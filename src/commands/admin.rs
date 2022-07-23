@@ -1,5 +1,5 @@
 use crate::data::prefix;
-use anyhow::{Context as CTX, Result};
+use anyhow::{Context as _, Result};
 use serenity::{model::channel::Message, prelude::*};
 use tokio::time::{sleep, Duration};
 

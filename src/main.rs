@@ -2,21 +2,19 @@
 
 mod commands;
 mod data;
-use anyhow::Context as CTX;
-use data::{config::Config, prefix::Prefix, Data};
+use anyhow::Context as _;
+use data::{config::Config, prefix, Data, Prefix};
 use dotenv::dotenv;
 use serenity::{
     model::{
         application::{command::Command, interaction::Interaction},
+        prelude::interaction::InteractionResponseType::ChannelMessageWithSource,
         prelude::*,
     },
     prelude::*,
 };
 use std::{borrow::Cow, env};
-use tokio::{
-    sync::RwLock,
-    time::{sleep, Duration},
-};
+use tokio::time::{sleep, Duration};
 
 struct Handler;
 
@@ -47,9 +45,7 @@ impl EventHandler for Handler {
 
         // get the prefix for the current guild
         #[cfg(feature = "custom_prefix")]
-        let prefix: Cow<str> = data::prefix::get(&msg, &ctx)
-            .await
-            .map_or("!".into(), Into::into);
+        let prefix: Cow<str> = prefix::get(&msg, &ctx).await.map_or("!".into(), Into::into);
 
         #[cfg(not(feature = "custom_prefix"))]
         let prefix = "!";
@@ -74,7 +70,7 @@ impl EventHandler for Handler {
             Ok(msg) => command
                 .create_interaction_response(&ctx.http, |response| {
                     response
-                        .kind(interaction::InteractionResponseType::ChannelMessageWithSource)
+                        .kind(ChannelMessageWithSource)
                         .interaction_response_data(|message| message.content(msg))
                 })
                 .await
@@ -84,7 +80,7 @@ impl EventHandler for Handler {
                 command
                     .create_interaction_response(&ctx.http, |response| {
                         response
-                            .kind(interaction::InteractionResponseType::ChannelMessageWithSource)
+                            .kind(ChannelMessageWithSource)
                             .interaction_response_data(|message| {
                                 message
                                 .content(format!("An Error occured: {e}\nIf you find a consistent way to cause this error, please report it to my support discord."))
@@ -111,7 +107,7 @@ async fn main() -> Result<(), anyhow::Error> {
         .into_string()
         .ok()
         .context("DISCORD_TOKEN contained non-UTF8 characters")?;
-    let config = data::config::Config::from_file("config.toml").unwrap_or_default();
+    let config = Config::from_file("config.toml").unwrap_or_default();
 
     // Try to read Application ID from config.toml.
     // On failure, try to derive Application ID from bot token.

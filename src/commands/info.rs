@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use anyhow::{Context as CTX, Result};
+use anyhow::{Context as _, Result};
 use serenity::{
     model::{
         application::interaction::application_command::CommandDataOption, channel::Message,

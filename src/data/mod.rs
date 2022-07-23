@@ -5,24 +5,27 @@ pub mod cookies;
 pub mod level;
 pub mod prefix;
 
+pub use cookies::Cookies;
+pub use level::Level;
+pub use prefix::Prefix;
 use rand::{thread_rng, Rng};
 use serenity::{client::Context, model::channel::Message};
 use tokio::sync::RwLock;
 
 pub struct Data<'l, 'c> {
     #[cfg(feature = "xp")]
-    pub level: level::Level<'l>,
+    pub level: Level<'l>,
 
     #[cfg(feature = "cookies")]
-    pub cookies: cookies::Cookies<'c>,
+    pub cookies: Cookies<'c>,
 }
 impl Data<'static, 'static> {
     pub fn new() -> Self {
         Self {
             #[cfg(feature = "xp")]
-            level: level::Level::new("level.json"),
+            level: Level::new("level.json"),
             #[cfg(feature = "cookies")]
-            cookies: cookies::Cookies::new("cookies.json"),
+            cookies: Cookies::new("cookies.json"),
         }
     }
 }
