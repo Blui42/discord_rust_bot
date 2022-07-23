@@ -12,7 +12,7 @@ use serenity::{
     },
     prelude::*,
 };
-use std::{borrow::Cow, env, io};
+use std::{borrow::Cow, env};
 use tokio::{
     sync::RwLock,
     time::{sleep, Duration},
@@ -39,18 +39,21 @@ impl EventHandler for Handler {
             return;
         }
 
-        // get the prefix for the current guild
-        #[cfg(feature = "custom_prefix")]
-        let prefix = match data::prefix::get(&msg, &ctx).await {
-            Some(a) => Cow::Owned(a),
-            None => Cow::Borrowed("!"),
-        };
-        #[cfg(not(feature = "custom_prefix"))]
-        let prefix = "!";
         // gives xp and cookies to user
         data::reward_user(&msg, &ctx).await;
 
-        #[cfg(feature = "legacy_commands")]
+        #[cfg(not(feature = "legacy_commands"))]
+        return;
+
+        // get the prefix for the current guild
+        #[cfg(feature = "custom_prefix")]
+        let prefix: Cow<str> = data::prefix::get(&msg, &ctx)
+            .await
+            .map_or("!".into(), Into::into);
+
+        #[cfg(not(feature = "custom_prefix"))]
+        let prefix = "!";
+
         commands::parse(&prefix, msg, ctx).await;
     }
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
@@ -104,8 +107,9 @@ async fn main() -> Result<(), anyhow::Error> {
     dotenv().ok(); // place variables from .env into this enviroment
 
     let token: String = env::var_os("DISCORD_TOKEN")
-    .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound,
-        "Put DISCORD_TOKEN=YourTokenHere into the .env file or add a DISCORD_TOKEN variable to the enviroment"))?.into_string().ok()
+        .context("Put DISCORD_TOKEN=YourTokenHere into the .env file the enviroment")?
+        .into_string()
+        .ok()
         .context("DISCORD_TOKEN contained non-UTF8 characters")?;
     let config = data::config::Config::from_file("config.toml").unwrap_or_default();
 
