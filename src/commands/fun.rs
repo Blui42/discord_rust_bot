@@ -12,20 +12,9 @@ use serenity::{
 
 #[cfg(feature = "legacy_commands")]
 pub async fn roll(ctx: Context, msg: Message) -> Result<()> {
-    let mut an_iterator = msg.content.split('d');
-    let rolls: u8 = an_iterator
-        .next()
-        .unwrap_or("1")
-        .trim()
-        .parse()
-        .unwrap_or(1);
-    let sides: u8 = an_iterator
-        .next()
-        .unwrap_or("6")
-        .trim()
-        .parse()
-        .unwrap_or(6);
-    drop(an_iterator);
+    let (rolls, sides): (u8, u8) = msg.content.split_once('d').map_or((1, 6), |(x, y)| {
+        (x.parse().unwrap_or(1), y.parse().unwrap_or(6))
+    });
     if (sides < 2) || (rolls == 0) {
         msg.channel_id
             .say(&ctx.http, "Isn't that a bit pointless?")
