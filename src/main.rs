@@ -162,8 +162,8 @@ async fn main() -> Result<(), anyhow::Error> {
         tokio::spawn(async move {
             loop {
                 sleep(Duration::from_secs(600)).await;
-                println!("Preparing to save...");
-                let res: Result<_, std::io::Error> = tokio::try_join!(
+                println!("Saving...");
+                let res = tokio::try_join! {
                     async {
                         client_data
                             .read()
@@ -187,11 +187,9 @@ async fn main() -> Result<(), anyhow::Error> {
                             .save()
                             .await
                     }
-                );
+                };
                 if let Err(why) = res {
-                    eprintln!(
-                        "Something went wrong trying to save. Disabled saving. \nMore info: {why}"
-                    );
+                    eprintln!("Error trying to save. Disabled saving. \nMore info: {why}");
                     return;
                 }
             }
