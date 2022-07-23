@@ -23,7 +23,7 @@ pub async fn roll(ctx: Context, msg: Message) -> Result<()> {
     }
     let (total, min, max, summary) = roll_dice(rolls, sides);
     let response: String = format!(
-        "**Result: `{total}`**\n Rolled {min}x1 and {max}x{sides} \n\n Detailed: ```{summary}```"
+        "**Result: `{total}`**\n Rolled {min}x1 and {max}x{sides} \n\n Detailed: ```{summary:?}```"
     );
     msg.channel_id
         .send_message(&ctx.http, |m| {
@@ -36,20 +36,17 @@ pub async fn roll(ctx: Context, msg: Message) -> Result<()> {
         .await?;
     Ok(())
 }
-fn roll_dice(rolls: u8, sides: u8) -> (u16, u8, u8, String) {
+fn roll_dice(rolls: u8, sides: u8) -> (u16, u8, u8, Vec<u8>) {
     let between = Uniform::new_inclusive(1, sides);
     let mut rng = thread_rng();
     let mut total: u16 = 0;
-    let mut summary: String = String::new();
+    let mut summary = Vec::with_capacity(sides.into());
     let mut min: u8 = 0;
     let mut max: u8 = 0;
-    for roll in 1..=rolls {
+    for _ in 0..rolls {
         let number: u8 = between.sample(&mut rng);
         total += u16::from(number);
-        summary += &number.to_string();
-        if roll != rolls {
-            summary += ", ";
-        }
+        summary.push(number);
         if number == sides {
             max += 1;
         }
@@ -88,7 +85,7 @@ pub async fn roll_command(options: &[CommandDataOption]) -> Result<Cow<'_, str>>
         Ok("A number that I'm too lazy to calculate (Try numbers 255 and below)".into())
     } else {
         let (total, min, max, summary) = roll_dice(rolls.to_le_bytes()[0], sides.to_le_bytes()[0]);
-        Ok(format!("**Rolled {rolls} {sides}-sided dice.** \n**Result: `{total}`**\n Rolled {min}x1 and {max}x{sides} \n\n Detailed: ```{summary}```").into())
+        Ok(format!("**Rolled {rolls} {sides}-sided dice.** \n**Result: `{total}`**\n Rolled {min}x1 and {max}x{sides} \n\n Detailed: ```{summary:?}```").into())
     }
 }
 pub async fn coin_command() -> Result<Cow<'static, str>> {
