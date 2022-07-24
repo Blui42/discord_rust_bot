@@ -55,7 +55,7 @@ pub async fn kick(ctx: Context, msg: Message) -> Result<()> {
         {
             eprintln!("An Error occured: {}", why);
         }
-        sleep(Duration::from_millis(500)).await;
+        tokio::task::yield_now().await;
     }
     Ok(())
 }
@@ -99,7 +99,7 @@ pub async fn unban(ctx: Context, msg: Message) -> Result<()> {
         {
             eprintln!("An Error occured: {}", why);
         }
-        sleep(Duration::from_millis(500)).await;
+        tokio::task::yield_now().await;
     }
     Ok(())
 }
@@ -156,7 +156,7 @@ pub async fn ban(ctx: Context, msg: Message) -> Result<()> {
         {
             eprintln!("An Error occured: {}", why);
         }
-        sleep(Duration::from_millis(500)).await;
+        tokio::task::yield_now().await;
     }
     Ok(())
 }
