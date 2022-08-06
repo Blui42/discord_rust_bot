@@ -121,8 +121,8 @@ pub async fn parse(prefix: &str, mut msg: Message, ctx: Context) {
                     format!("Hi, {}! The current prefix is {prefix}", msg.author),
                 )
                 .await
-                .err()
-                .map(|why| eprintln!("An Error occured: {why}"));
+                .map_err(|why| eprintln!("An Error occured: {why}"))
+                .ok();
         }
         return;
     }
@@ -134,7 +134,7 @@ pub async fn parse(prefix: &str, mut msg: Message, ctx: Context) {
         .next()
         .unwrap_or(" ")
         .to_lowercase();
-    msg.content = msg.content.replacen(&command, "", 1).replacen(" ", "", 1);
+    msg.content = msg.content.replacen(&command, "", 1).replacen(' ', "", 1);
     // matches for correct command, hands over ctx, msg
     let command_result = match command.as_str() {
         // "cmd" => category::cmd(ctx, msg).await, // Comment on what this does

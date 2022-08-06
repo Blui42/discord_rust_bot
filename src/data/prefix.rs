@@ -13,11 +13,10 @@ pub struct Prefix<'a> {
 
 impl<'a> Prefix<'a> {
     pub fn get(&self, guild: u64) -> Option<String> {
-        if let Some(a) = self.prefix.get(&guild.to_string())?.as_str() {
-            // check if the guild has a prefix
-            return Some(a.to_string()); // if so, return it
-        }
-        None // otherwise, return None
+        self.prefix
+            .get(&guild.to_string())?
+            .as_str()
+            .map(ToString::to_string)
     }
     pub fn set(&mut self, guild: u64, prefix: &str) {
         if let Some(a) = self.prefix.get_mut(&guild.to_string()) {
