@@ -2,24 +2,19 @@
 
 mod commands;
 mod data;
-use anyhow::Context as CTX;
-use data::{config::Config, prefix::Prefix, Data};
+use anyhow::Context as _;
+use data::{config::Config, prefix, Data, Prefix};
 use dotenv::dotenv;
 use serenity::{
     model::{
-        application::{
-            command::Command,
-            interaction::Interaction,
-        },
+        application::{command::Command, interaction::Interaction},
+        prelude::interaction::InteractionResponseType::ChannelMessageWithSource,
         prelude::*,
     },
     prelude::*,
 };
-use std::{borrow::Cow, env, io};
-use tokio::{
-    sync::RwLock,
-    time::{sleep, Duration},
-};
+use std::{borrow::Cow, env};
+use tokio::time::{sleep, Duration};
 
 struct Handler;
 
@@ -42,18 +37,19 @@ impl EventHandler for Handler {
             return;
         }
 
-        // get the prefix for the current guild
-        #[cfg(feature = "custom_prefix")]
-        let prefix = match data::prefix::get(&msg, &ctx).await {
-            Some(a) => Cow::Owned(a),
-            None => Cow::Borrowed("!"),
-        };
-        #[cfg(not(feature = "custom_prefix"))]
-        let prefix = "!";
         // gives xp and cookies to user
         data::reward_user(&msg, &ctx).await;
 
-        #[cfg(feature = "legacy_commands")]
+        #[cfg(not(feature = "legacy_commands"))]
+        return;
+
+        // get the prefix for the current guild
+        #[cfg(feature = "custom_prefix")]
+        let prefix: Cow<str> = prefix::get(&msg, &ctx).await.map_or("!".into(), Into::into);
+
+        #[cfg(not(feature = "custom_prefix"))]
+        let prefix = "!";
+
         commands::parse(&prefix, msg, ctx).await;
     }
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
@@ -74,7 +70,7 @@ impl EventHandler for Handler {
             Ok(msg) => command
                 .create_interaction_response(&ctx.http, |response| {
                     response
-                        .kind(interaction::InteractionResponseType::ChannelMessageWithSource)
+                        .kind(ChannelMessageWithSource)
                         .interaction_response_data(|message| message.content(msg))
                 })
                 .await
@@ -84,7 +80,7 @@ impl EventHandler for Handler {
                 command
                     .create_interaction_response(&ctx.http, |response| {
                         response
-                            .kind(interaction::InteractionResponseType::ChannelMessageWithSource)
+                            .kind(ChannelMessageWithSource)
                             .interaction_response_data(|message| {
                                 message
                                 .content(format!("An Error occured: {e}\nIf you find a consistent way to cause this error, please report it to my support discord."))
@@ -107,10 +103,11 @@ async fn main() -> Result<(), anyhow::Error> {
     dotenv().ok(); // place variables from .env into this enviroment
 
     let token: String = env::var_os("DISCORD_TOKEN")
-    .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, 
-        "Put DISCORD_TOKEN=YourTokenHere into the .env file or add a DISCORD_TOKEN variable to the enviroment"))?.into_string().ok()
+        .context("Put DISCORD_TOKEN=YourTokenHere into the .env file the enviroment")?
+        .into_string()
+        .ok()
         .context("DISCORD_TOKEN contained non-UTF8 characters")?;
-    let config = data::config::Config::from_file("config.toml").unwrap_or_default();
+    let config = Config::from_file("config.toml").unwrap_or_default();
 
     // Try to read Application ID from config.toml.
     // On failure, try to derive Application ID from bot token.
@@ -136,8 +133,7 @@ async fn main() -> Result<(), anyhow::Error> {
 
     {
         let mut client_data = client.data.write().await;
-        let data = Data::new();
-        client_data.insert::<Data>(RwLock::new(data));
+        client_data.insert::<Data>(RwLock::new(Data::new()));
         client_data.insert::<Config>(config);
 
         #[cfg(feature = "custom_prefix")]
@@ -166,13 +162,14 @@ async fn main() -> Result<(), anyhow::Error> {
         tokio::spawn(async move {
             loop {
                 sleep(Duration::from_secs(600)).await;
-                println!("Preparing to save...");
-                let res: Result<_, std::io::Error> = tokio::try_join!(
+                println!("Saving...");
+                let res = tokio::try_join! {
                     async {
                         client_data
                             .read()
                             .await
-                            .get::<Data>().expect("Missing Data for saving!")
+                            .get::<Data>()
+                            .expect("Missing Data for saving!")
                             .read()
                             .await
                             .save()
@@ -183,15 +180,16 @@ async fn main() -> Result<(), anyhow::Error> {
                         client_data
                             .read()
                             .await
-                            .get::<Prefix>().expect("Missing Prefix Data for saving!")
+                            .get::<Prefix>()
+                            .expect("Missing Prefix Data for saving!")
                             .read()
                             .await
                             .save()
                             .await
                     }
-                );
+                };
                 if let Err(why) = res {
-                    eprintln!("Something went wrong trying to save. Disabled saving. \nMore info: {why}");
+                    eprintln!("Error trying to save. Disabled saving. \nMore info: {why}");
                     return;
                 }
             }

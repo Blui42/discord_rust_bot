@@ -1,6 +1,6 @@
 #![cfg(feature = "xp")]
 use serde::{Deserialize, Serialize};
-use serde_json::{self, Map, Value};
+use serde_json::{Map, Value};
 use std::fs;
 
 pub struct Level<'a> {

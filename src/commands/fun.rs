@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use anyhow::{Context as CTX, Result};
+use anyhow::{Context as _, Result};
 use rand::{
     distributions::{Distribution, Uniform},
     prelude::*,
@@ -12,20 +12,9 @@ use serenity::{
 
 #[cfg(feature = "legacy_commands")]
 pub async fn roll(ctx: Context, msg: Message) -> Result<()> {
-    let mut an_iterator = msg.content.split('d');
-    let rolls: u8 = an_iterator
-        .next()
-        .unwrap_or("1")
-        .trim()
-        .parse()
-        .unwrap_or(1);
-    let sides: u8 = an_iterator
-        .next()
-        .unwrap_or("6")
-        .trim()
-        .parse()
-        .unwrap_or(6);
-    drop(an_iterator);
+    let (rolls, sides): (u8, u8) = msg.content.split_once('d').map_or((1, 6), |(x, y)| {
+        (x.parse().unwrap_or(1), y.parse().unwrap_or(6))
+    });
     if (sides < 2) || (rolls == 0) {
         msg.channel_id
             .say(&ctx.http, "Isn't that a bit pointless?")
@@ -34,7 +23,7 @@ pub async fn roll(ctx: Context, msg: Message) -> Result<()> {
     }
     let (total, min, max, summary) = roll_dice(rolls, sides);
     let response: String = format!(
-        "**Result: `{total}`**\n Rolled {min}x1 and {max}x{sides} \n\n Detailed: ```{summary}```"
+        "**Result: `{total}`**\n Rolled {min}x1 and {max}x{sides} \n\n Detailed: ```{summary:?}```"
     );
     msg.channel_id
         .send_message(&ctx.http, |m| {
@@ -47,20 +36,17 @@ pub async fn roll(ctx: Context, msg: Message) -> Result<()> {
         .await?;
     Ok(())
 }
-fn roll_dice(rolls: u8, sides: u8) -> (u16, u8, u8, String) {
+fn roll_dice(rolls: u8, sides: u8) -> (u16, u8, u8, Vec<u8>) {
     let between = Uniform::new_inclusive(1, sides);
     let mut rng = thread_rng();
     let mut total: u16 = 0;
-    let mut summary: String = String::new();
+    let mut summary = Vec::with_capacity(sides.into());
     let mut min: u8 = 0;
     let mut max: u8 = 0;
-    for roll in 1..=rolls {
+    for _ in 0..rolls {
         let number: u8 = between.sample(&mut rng);
         total += u16::from(number);
-        summary += &number.to_string();
-        if roll != rolls {
-            summary += ", ";
-        }
+        summary.push(number);
         if number == sides {
             max += 1;
         }
@@ -70,7 +56,7 @@ fn roll_dice(rolls: u8, sides: u8) -> (u16, u8, u8, String) {
     }
     (total, min, max, summary)
 }
-pub async fn roll_command<'a>(options: &'a [CommandDataOption]) -> Result<Cow<'a, str>> {
+pub async fn roll_command(options: &[CommandDataOption]) -> Result<Cow<'_, str>> {
     let rolls: i64 = options
         .get(0)
         .context("missing rolls field")?
@@ -99,7 +85,7 @@ pub async fn roll_command<'a>(options: &'a [CommandDataOption]) -> Result<Cow<'a
         Ok("A number that I'm too lazy to calculate (Try numbers 255 and below)".into())
     } else {
         let (total, min, max, summary) = roll_dice(rolls.to_le_bytes()[0], sides.to_le_bytes()[0]);
-        Ok(format!("**Rolled {rolls} {sides}-sided dice.** \n**Result: `{total}`**\n Rolled {min}x1 and {max}x{sides} \n\n Detailed: ```{summary}```").into())
+        Ok(format!("**Rolled {rolls} {sides}-sided dice.** \n**Result: `{total}`**\n Rolled {min}x1 and {max}x{sides} \n\n Detailed: ```{summary:?}```").into())
     }
 }
 pub async fn coin_command() -> Result<Cow<'static, str>> {

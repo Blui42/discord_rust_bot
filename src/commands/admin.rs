@@ -1,5 +1,5 @@
 use crate::data::prefix;
-use anyhow::{Context as CTX, Result};
+use anyhow::{Context as _, Result};
 use serenity::{model::channel::Message, prelude::*};
 use tokio::time::{sleep, Duration};
 
@@ -55,7 +55,7 @@ pub async fn kick(ctx: Context, msg: Message) -> Result<()> {
         {
             eprintln!("An Error occured: {}", why);
         }
-        sleep(Duration::from_millis(500)).await;
+        tokio::task::yield_now().await;
     }
     Ok(())
 }
@@ -99,7 +99,7 @@ pub async fn unban(ctx: Context, msg: Message) -> Result<()> {
         {
             eprintln!("An Error occured: {}", why);
         }
-        sleep(Duration::from_millis(500)).await;
+        tokio::task::yield_now().await;
     }
     Ok(())
 }
@@ -156,7 +156,7 @@ pub async fn ban(ctx: Context, msg: Message) -> Result<()> {
         {
             eprintln!("An Error occured: {}", why);
         }
-        sleep(Duration::from_millis(500)).await;
+        tokio::task::yield_now().await;
     }
     Ok(())
 }

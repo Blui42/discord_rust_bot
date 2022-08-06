@@ -1,5 +1,5 @@
 #![cfg(feature = "tic_tac_toe")]
-use anyhow::{bail, Context as CTX, Result};
+use anyhow::{bail, Context as _, Result};
 use serenity::{
     model::{
         application::interaction::application_command::{
