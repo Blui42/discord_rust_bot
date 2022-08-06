@@ -108,15 +108,11 @@ pub async fn coin_command() -> Result<Cow<'static, str>> {
 
 #[inline]
 pub fn flip_coin() -> &'static str {
-    let number: u8 = random();
-    if number > 128 {
-        "It landed tails!"
-    } else if number < 127 {
-        "It landed heads!"
-    } else if number == 127 {
-        "It didn't tip over!"
-    } else {
-        "It fell under the table!"
+    match thread_rng().gen::<i8>() {
+        -128..=-2 => "It landed tails!",
+        -1 => "It didn't tip over",
+        0 => "It fell under the table",
+        1.. => "It landed heads",
     }
 }
 #[cfg(feature = "legacy_commands")]
