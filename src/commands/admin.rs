@@ -183,7 +183,7 @@ pub async fn prefix(ctx: Context, msg: Message) -> Result<()> {
             .await?;
         return Ok(());
     }
-    let new_prefix = msg.content.trim_matches('`');
+    let new_prefix = msg.content.trim_start().trim_matches('`').trim_start();
     if new_prefix.len() > 5 {
         msg.channel_id
             .say(&ctx.http, "Prefixes can't be longer than 5 symbols.")
