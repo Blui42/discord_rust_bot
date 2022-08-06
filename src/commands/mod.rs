@@ -115,16 +115,14 @@ pub async fn parse(prefix: &str, mut msg: Message, ctx: Context) {
     if !msg.content.starts_with(&prefix) {
         // print out the prefix if the bot is mentioned
         if let Ok(true) = msg.mentions_me(&ctx.http).await {
-            if let Err(why) = msg
-                .channel_id
+            msg.channel_id
                 .say(
                     &ctx.http,
-                    format!("Hi, {}! The current prefix is {}", msg.author, prefix),
+                    format!("Hi, {}! The current prefix is {prefix}", msg.author),
                 )
                 .await
-            {
-                eprintln!("An Error occured: {}", why);
-            }
+                .err()
+                .map(|why| eprintln!("An Error occured: {why}"));
         }
         return;
     }
