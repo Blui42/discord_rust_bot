@@ -28,7 +28,7 @@ pub async fn pic(ctx: Context, msg: Message) -> Result<()> {
 }
 #[cfg(feature = "legacy_commands")]
 pub async fn id(ctx: Context, msg: Message) -> Result<()> {
-    for target in msg.content.trim().split_whitespace() {
+    for target in msg.content.split_whitespace() {
         if !(target.starts_with('<') && target.ends_with('>')) {
             msg.channel_id
                 .say(
