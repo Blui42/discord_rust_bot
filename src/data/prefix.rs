@@ -61,18 +61,16 @@ impl serenity::prelude::TypeMapKey for Prefix<'static> {
 /// Tries to get the prefix for the guild the user is in.
 /// If this returns None, a default value of "!" should be used.
 pub async fn get(msg: &Message, ctx: &Context) -> Option<String> {
-    if msg.is_private() {
-        return None;
-    }
-    // get immutable reference to prefix variable
-    return ctx
-        .data
+    // early return for private messages
+    let guild_id = msg.guild_id?.0;
+
+    ctx.data
         .read()
         .await
         .get::<Prefix>()?
         .read()
         .await
-        .get(msg.guild_id?.0);
+        .get(guild_id)
 }
 pub async fn set(guild: GuildId, ctx: &Context, new_prefix: &str) {
     // get mutable prefix variable
