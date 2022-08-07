@@ -10,25 +10,13 @@ pub struct Cookies<'a> {
 
 impl<'a> Cookies<'a> {
     pub fn get(&self, user: u64) -> Option<u64> {
-        let a = self.data.get(&user.to_string())?;
-        a.as_u64()
+        self.data.get(&user.to_string())?.as_u64()
     }
     pub fn set(&mut self, user: u64, cookies: u64) {
-        if let Some(b) = self.data.get_mut(&user.to_string()) {
-            *b = Value::from(cookies);
-            return;
-        }
-        self.add_user(user);
+        self.data.insert(user.to_string(), Value::from(cookies));
     }
     pub fn give(&mut self, user: u64, cookies: u64) {
-        if let Some(current_cookies) = self.get(user) {
-            self.set(user, current_cookies + cookies);
-            return;
-        }
-        self.add_user(user);
-    }
-    fn add_user(&mut self, user: u64) {
-        self.data.insert(user.to_string(), Value::from(0_u64));
+        self.set(user, self.get(user).unwrap_or(0) + cookies);
     }
 
     pub fn new(path: &'a str) -> Self {

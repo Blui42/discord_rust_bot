@@ -18,22 +18,13 @@ impl<'a> Prefix<'a> {
             .as_str()
             .map(ToString::to_string)
     }
-    pub fn set(&mut self, guild: u64, prefix: &str) {
-        if let Some(a) = self.prefix.get_mut(&guild.to_string()) {
-            *a = serde_json::json!(prefix);
-            return;
-        }
-        self.add_prefix(guild, prefix);
-    }
-    fn add_prefix(&mut self, guild: u64, prefix: &str) {
-        self.prefix
-            .insert(guild.to_string(), Value::String(prefix.to_string()));
+    pub fn set(&mut self, guild: u64, prefix: impl Into<String>) {
+        self.prefix.insert(guild.to_string(), prefix.into().into());
     }
     pub fn new(path: &'a str) -> Self {
         let file = fs::read_to_string(&path);
         let file_contents: &str = file.as_ref().map_or("{}", |x| x);
-        let prefix: serde_json::Map<String, Value> =
-            serde_json::from_str(file_contents).unwrap_or_default();
+        let prefix: Map<_, _> = serde_json::from_str(file_contents).unwrap_or_default();
         Self { prefix, path }
     }
     pub async fn save(&self) -> Result<(), std::io::Error> {

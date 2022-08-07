@@ -14,36 +14,21 @@ impl<'a> Level<'a> {
         serde_json::from_value(a.clone()).ok()?
     }
     pub fn set(&mut self, user: u64, guild: u64, to: &XPCounter) {
-        if let Some(a) = self.data.get_mut(&guild.to_string()) {
-            if let Some(b) = a.get_mut(user.to_string()) {
-                if let Ok(to_as_value) = serde_json::to_value(to) {
-                    *b = to_as_value;
-                    return;
-                }
-            }
-        }
-        self.add_user(user, guild);
-    }
-    pub fn add_xp(&mut self, user: u64, guild: u64, xp: u64) {
-        if let Some(mut current_level) = self.get(user, guild) {
-            current_level.add_xp(xp);
-            self.set(user, guild, &current_level);
-            return;
-        }
-        self.add_user(user, guild);
-    }
-    fn add_user(&mut self, user: u64, guild: u64) {
-        if let Some(a) = self.data.get_mut(&guild.to_string()) {
-            if let Some(map) = a.as_object_mut() {
-                map.insert(
-                    user.to_string(),
-                    serde_json::to_value(XPCounter::new()).unwrap(),
-                );
-            }
-            return;
+        if let Some(a) = self
+            .data
+            .get_mut(&guild.to_string())
+            .and_then(Value::as_object_mut)
+        {
+            a.insert(user.to_string(), serde_json::to_value(to).unwrap());
         }
         self.add_guild(guild);
     }
+    pub fn add_xp(&mut self, user: u64, guild: u64, xp: u64) {
+        let mut current_level = self.get(user, guild).unwrap_or_default();
+        current_level.add_xp(xp);
+        self.set(user, guild, &current_level);
+    }
+
     fn add_guild(&mut self, guild: u64) {
         self.data.insert(guild.to_string(), serde_json::json!({}));
     }
@@ -88,5 +73,11 @@ impl XPCounter {
             self.xp -= xp_target;
             self.level += 1;
         }
+    }
+}
+
+impl Default for XPCounter {
+    fn default() -> Self {
+        Self::new()
     }
 }
