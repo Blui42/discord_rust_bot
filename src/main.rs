@@ -7,8 +7,10 @@ use data::{config::Config, prefix, Data, Prefix};
 use dotenv::dotenv;
 use serenity::{
     model::{
-        application::{command::Command, interaction::Interaction},
-        prelude::interaction::InteractionResponseType::ChannelMessageWithSource,
+        application::{
+            command::Command,
+            interaction::{Interaction, InteractionResponseType::ChannelMessageWithSource},
+        },
         prelude::*,
     },
     prelude::*,

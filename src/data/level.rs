@@ -11,7 +11,7 @@ pub struct Level<'a> {
 impl<'a> Level<'a> {
     pub fn get(&self, user: u64, guild: u64) -> Option<XPCounter> {
         let a = self.data.get(&guild.to_string())?.get(user.to_string())?;
-        serde_json::from_value(a.clone()).ok()?
+        serde_json::from_value(a.clone()).ok()
     }
     pub fn set(&mut self, user: u64, guild: u64, to: &XPCounter) {
         if let Some(a) = self
