@@ -75,17 +75,13 @@ pub async fn cancel_game<'a>(
 ) -> Result<Cow<'a, str>> {
     // This will be Some(opponent) if the user spefified an opponent, otherwise None.
     let opponent = if let Some(a) = options.get(0) {
-        if let CommandDataOptionValue::User(opponent, _) =
-            a.resolved.as_ref().context("Missing argument `opponent`")?
-        {
-            Some(&opponent.id)
-        } else {
-            bail!(
-                "In {}/{}: opponent was of incorrect type, expected User. More Info: \n{:#?}",
+        match a.resolved.as_ref().context("get field `opponent`")? {
+            CommandDataOptionValue::User(opponent, _) => Some(&opponent.id),
+            x => bail!(
+                "In {}/{}: opponent was of incorrect type: Expected User, got {x:?}```",
                 file!(),
                 line!(),
-                a.resolved
-            );
+            ),
         }
     } else {
         None
@@ -125,17 +121,13 @@ pub async fn start_game<'a>(
 ) -> Result<Cow<'a, str>> {
     // This will be Some(opponent) if the user spefified an opponent, otherwise None.
     let opponent = if let Some(a) = options.get(0) {
-        if let CommandDataOptionValue::User(opponent, _) =
-            a.resolved.as_ref().context("get field `opponent`")?
-        {
-            Some(opponent.id)
-        } else {
-            bail!(format!(
-                "In {}/{}: opponent was of incorrect type, expected User. More Info: \n{:#?}```",
+        match a.resolved.as_ref().context("get field `opponent`")? {
+            CommandDataOptionValue::User(opponent, _) => Some(opponent.id),
+            x => bail!(
+                "In {}/{}: opponent was of incorrect type: Expected User, got {x:?}```",
                 file!(),
                 line!(),
-                a.resolved
-            ));
+            ),
         }
     } else {
         None
@@ -188,7 +180,7 @@ pub async fn mark_field<'a>(
         .as_ref()
         .context("missing field `number`")?
         .as_u64()
-        .context("field `number` was not a number")?
+        .unwrap_or(10)
         .try_into()
         .unwrap_or(10_usize);
     if field_number == 0 || field_number > 9 {
@@ -348,7 +340,7 @@ impl fmt::Display for TicTacToe {
             ];
             for (index, (element, nr)) in self.field.iter().zip(NUMBER_FIELD.iter()).enumerate() {
                 match element {
-                    0 => write!(f, "{}", nr)?,
+                    0 => write!(f, "{nr}")?,
                     1 => write!(f, ":negative_squared_cross_mark:")?,
                     2 => write!(f, ":o2:")?,
                     _ => write!(f, ":interrobang:")?,
