@@ -32,6 +32,7 @@ pub fn commands(commands: &mut CreateApplicationCommands) -> &mut CreateApplicat
                                 .name("target")
                                 .description("The user or role to get the ID of")
                                 .kind(CommandOptionType::Mentionable)
+                                .required(true)
                         })
                 })
                 .create_option(|option| {
@@ -44,6 +45,7 @@ pub fn commands(commands: &mut CreateApplicationCommands) -> &mut CreateApplicat
                                 .name("target")
                                 .description("The Channel to get the ID of")
                                 .kind(CommandOptionType::Channel)
+                                .required(true)
                         })
                 })
         })
