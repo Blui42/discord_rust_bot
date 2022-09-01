@@ -10,19 +10,17 @@ pub async fn id<'a>(
     options: &'a [CommandDataOption],
     guild_id: Option<&GuildId>,
 ) -> Result<Cow<'a, str>> {
-    let target_type = options.get(0).context("get id target type")?;
-    match target_type.name.as_str() {
-        "user" | "channel" => Ok(options
-            .get(0)
-            .context("get first argument")?
+    let subcommand = options.get(0).context("Missing Subcommand")?;
+    match subcommand.name.as_str() {
+        "user" | "channel" => Ok(subcommand
             .options
             .get(0)
-            .context("get seccond argument")?
+            .context("Missing Argument (API out of sync?)")?
             .value
             .as_ref()
-            .context("get value of seccond argument")?
+            .context("Missing Argument Value (API out of sync?)")?
             .as_str()
-            .context("get string representation of 2nd arg")?
+            .context("Argument was not a String! (I may need an update?)")?
             .into()),
         "server" => match guild_id {
             Some(a) => Ok(a.0.to_string().into()),
