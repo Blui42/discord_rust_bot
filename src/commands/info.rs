@@ -3,7 +3,10 @@ use std::borrow::Cow;
 use anyhow::{Context as _, Result};
 use serenity::{
     model::{
-        application::interaction::application_command::CommandDataOption, channel::Message,
+        application::interaction::application_command::{
+            CommandDataOption, CommandDataOptionValue,
+        },
+        channel::Message,
         id::GuildId,
     },
     prelude::*,
@@ -68,5 +71,12 @@ pub async fn get_id_command<'a>(
             None => Ok("This can only be used while on a server".into()),
         },
         _ => Ok("Something went wrong".into()),
+    }
+}
+pub async fn picture<'a>(options: &'a [CommandDataOption]) -> Result<Cow<'static, str>> {
+    let target = options.get(0).and_then(|x| x.resolved.as_ref());
+    match target {
+        Some(CommandDataOptionValue::User(target, _)) => Ok(target.face().into()),
+        _ => anyhow::bail!("Missing Arguments for getting profile picture"),
     }
 }

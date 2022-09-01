@@ -10,6 +10,7 @@ use serenity::client::Context;
 use serenity::model::application::command::CommandOptionType;
 use serenity::model::channel::Message;
 
+#[allow(clippy::too_many_lines)]
 pub fn commands(commands: &mut CreateApplicationCommands) -> &mut CreateApplicationCommands {
     commands
         .create_application_command(|command| {
@@ -47,6 +48,18 @@ pub fn commands(commands: &mut CreateApplicationCommands) -> &mut CreateApplicat
                                 .kind(CommandOptionType::Channel)
                                 .required(true)
                         })
+                })
+        })
+        .create_application_command(|command| {
+            command
+                .name("picture")
+                .description("Get a user's profile picture")
+                .create_option(|option| {
+                    option
+                        .name("target")
+                        .description("The User to get the profile picture of")
+                        .kind(CommandOptionType::User)
+                        .required(true)
                 })
         })
         .create_application_command(|command| {
