@@ -1,6 +1,14 @@
+use std::borrow::Cow;
+
 use crate::data::prefix;
 use anyhow::{Context as _, Result};
-use serenity::{model::channel::Message, prelude::*};
+use serenity::{
+    model::{
+        application::interaction::application_command::CommandDataOption, channel::Message,
+        id::ChannelId,
+    },
+    prelude::*,
+};
 use tokio::time::{sleep, Duration};
 
 #[cfg(feature = "legacy_commands")]
@@ -254,4 +262,32 @@ pub async fn delete(ctx: Context, msg: Message) -> Result<()> {
         error_msg.delete(&ctx.http).await?;
     }
     Ok(())
+}
+
+pub async fn delete_command(
+    options: &[CommandDataOption],
+    channel: ChannelId,
+    ctx: &Context,
+) -> Result<Cow<'static, str>> {
+    let amount = options
+        .get(0)
+        .context("Get argument")?
+        .value
+        .as_ref()
+        .context("Get argument")?
+        .as_i64()
+        .context("Argument was not a number (Delete Command)")?;
+    if !(1..=100).contains(&amount) {
+        return Ok("Please specify a valid amount of messages to delete (1-100).".into());
+    }
+    #[allow(clippy::cast_sign_loss)]
+    let messages = match channel
+        .messages(ctx, |retriever| retriever.limit(amount as u64))
+        .await
+    {
+        Ok(x) => x,
+        Err(_) => return Ok("Something went wrong".into()),
+    };
+    drop(channel.delete_messages(ctx, messages).await);
+    Ok("Now everyone knows you're censoring them!".into())
 }

@@ -124,6 +124,18 @@ pub fn commands(commands: &mut CreateApplicationCommands) -> &mut CreateApplicat
                         })
                 })
         })
+        .create_application_command(|command| {
+            command
+                .name("delete")
+                .description("Delete some messages")
+                .create_option(|option| {
+                    option
+                        .name("count")
+                        .description("The amount of messages to delete")
+                        .kind(CommandOptionType::Integer)
+                        .required(true)
+                })
+        })
 }
 #[cfg(feature = "legacy_commands")]
 pub async fn parse(prefix: &str, mut msg: Message, ctx: Context) {

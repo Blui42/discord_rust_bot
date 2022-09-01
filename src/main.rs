@@ -55,6 +55,7 @@ impl EventHandler for Handler {
         commands::parse(&prefix, msg, ctx).await;
     }
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
+        
         let command = if let Interaction::ApplicationCommand(command) = interaction {
             command
         } else {
@@ -67,6 +68,7 @@ impl EventHandler for Handler {
             "id" => commands::info::get_id_command(options, command.guild_id.as_ref()).await,
             "ttt" => commands::tic_tac_toe::command(options, &ctx, &command.user).await,
             "picture" => commands::info::picture(options).await,
+            "delete" => commands::admin::delete_command(options, command.channel_id, &ctx).await,
             x => Err(anyhow::anyhow!("Unknown Command: {x}")),
         };
         match response {
