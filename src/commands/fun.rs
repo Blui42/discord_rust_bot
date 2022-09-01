@@ -5,37 +5,8 @@ use rand::{
     distributions::{Distribution, Uniform},
     prelude::*,
 };
-use serenity::{
-    model::{application::interaction::application_command::CommandDataOption, channel::Message},
-    prelude::*,
-};
+use serenity::model::application::interaction::application_command::CommandDataOption;
 
-#[cfg(feature = "legacy_commands")]
-pub async fn roll(ctx: Context, msg: Message) -> Result<()> {
-    let (rolls, sides): (u8, u8) = msg.content.split_once('d').map_or((1, 6), |(x, y)| {
-        (x.parse().unwrap_or(1), y.parse().unwrap_or(6))
-    });
-    if (sides < 2) || (rolls == 0) {
-        msg.channel_id
-            .say(&ctx.http, "Isn't that a bit pointless?")
-            .await?;
-        return Ok(());
-    }
-    let (total, min, max, summary) = roll_dice(rolls, sides);
-    let response: String = format!(
-        "**Result: `{total}`**\n Rolled {min}x1 and {max}x{sides} \n\n Detailed: ```{summary:?}```"
-    );
-    msg.channel_id
-        .send_message(&ctx.http, |m| {
-            m.embed(|e| {
-                e.title(format!("Rolled {rolls}d{sides}."))
-                    .description(response)
-                    .colour(0xff)
-            })
-        })
-        .await?;
-    Ok(())
-}
 fn roll_dice(rolls: u8, sides: u8) -> (u16, u8, u8, Vec<u8>) {
     let between = Uniform::new_inclusive(1, sides);
     let mut rng = thread_rng();
@@ -56,7 +27,7 @@ fn roll_dice(rolls: u8, sides: u8) -> (u16, u8, u8, Vec<u8>) {
     }
     (total, min, max, summary)
 }
-pub async fn roll_command(options: &[CommandDataOption]) -> Result<Cow<'_, str>> {
+pub async fn roll(options: &[CommandDataOption]) -> Result<Cow<'_, str>> {
     let rolls: i64 = options
         .get(0)
         .context("missing rolls field")?
@@ -88,7 +59,7 @@ pub async fn roll_command(options: &[CommandDataOption]) -> Result<Cow<'_, str>>
         Ok(format!("**Rolled {rolls} {sides}-sided dice.** \n**Result: `{total}`**\n Rolled {min}x1 and {max}x{sides} \n\n Detailed: ```{summary:?}```").into())
     }
 }
-pub async fn coin_command() -> Result<Cow<'static, str>> {
+pub async fn coin() -> Result<Cow<'static, str>> {
     Ok(flip_coin().into())
 }
 
@@ -100,9 +71,4 @@ pub fn flip_coin() -> &'static str {
         0 => "It fell under the table",
         1.. => "It landed heads",
     }
-}
-#[cfg(feature = "legacy_commands")]
-pub async fn coin(ctx: Context, msg: Message) -> Result<()> {
-    msg.channel_id.say(&ctx.http, &flip_coin()).await?;
-    Ok(())
 }

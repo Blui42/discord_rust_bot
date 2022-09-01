@@ -3,7 +3,7 @@
 mod commands;
 mod data;
 use anyhow::Context as _;
-use data::{config::Config, prefix, Data, Prefix};
+use data::{config::Config, Data};
 use dotenv::dotenv;
 use serenity::{
     model::{
@@ -15,7 +15,7 @@ use serenity::{
     },
     prelude::*,
 };
-use std::{borrow::Cow, env};
+use std::env;
 use tokio::time::{sleep, Duration};
 
 struct Handler;
@@ -41,21 +41,8 @@ impl EventHandler for Handler {
 
         // gives xp and cookies to user
         data::reward_user(&msg, &ctx).await;
-
-        #[cfg(not(feature = "legacy_commands"))]
-        return;
-
-        // get the prefix for the current guild
-        #[cfg(feature = "custom_prefix")]
-        let prefix: Cow<str> = prefix::get(&msg, &ctx).await.map_or("!".into(), Into::into);
-
-        #[cfg(not(feature = "custom_prefix"))]
-        let prefix = "!";
-
-        commands::parse(&prefix, msg, ctx).await;
     }
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
-        
         let command = if let Interaction::ApplicationCommand(command) = interaction {
             command
         } else {
@@ -63,12 +50,12 @@ impl EventHandler for Handler {
         };
         let options = command.data.options.as_slice();
         let response = match command.data.name.as_str() {
-            "roll" => commands::fun::roll_command(options).await,
-            "coin" => commands::fun::coin_command().await,
-            "id" => commands::info::get_id_command(options, command.guild_id.as_ref()).await,
+            "roll" => commands::fun::roll(options).await,
+            "coin" => commands::fun::coin().await,
+            "id" => commands::info::id(options, command.guild_id.as_ref()).await,
             "ttt" => commands::tic_tac_toe::command(options, &ctx, &command.user).await,
             "picture" => commands::info::picture(options).await,
-            "delete" => commands::admin::delete_command(options, command.channel_id, &ctx).await,
+            "delete" => commands::admin::delete(options, command.channel_id, &ctx).await,
             x => Err(anyhow::anyhow!("Unknown Command: {x}")),
         };
         match response {
@@ -141,9 +128,6 @@ async fn main() -> Result<(), anyhow::Error> {
         client_data.insert::<Data>(RwLock::new(Data::new()));
         client_data.insert::<Config>(config);
 
-        #[cfg(feature = "custom_prefix")]
-        client_data.insert::<Prefix>(RwLock::new(Prefix::new("prefix.json")));
-
         #[cfg(feature = "tic_tac_toe")]
         client_data.insert::<commands::tic_tac_toe::Running>(RwLock::new(Vec::with_capacity(3)));
         #[cfg(feature = "tic_tac_toe")]
@@ -168,31 +152,15 @@ async fn main() -> Result<(), anyhow::Error> {
             loop {
                 sleep(Duration::from_secs(600)).await;
                 println!("Saving...");
-                let res = tokio::try_join! {
-                    async {
-                        client_data
-                            .read()
-                            .await
-                            .get::<Data>()
-                            .expect("Missing Data for saving!")
-                            .read()
-                            .await
-                            .save()
-                            .await
-                    },
-                    #[cfg(feature = "custom_prefix")]
-                    async {
-                        client_data
-                            .read()
-                            .await
-                            .get::<Prefix>()
-                            .expect("Missing Prefix Data for saving!")
-                            .read()
-                            .await
-                            .save()
-                            .await
-                    }
-                };
+                let res = client_data
+                    .read()
+                    .await
+                    .get::<Data>()
+                    .expect("Missing Data for saving!")
+                    .read()
+                    .await
+                    .save()
+                    .await;
                 if let Err(why) = res {
                     eprintln!("Error trying to save. Disabled saving. \nMore info: {why}");
                     return;

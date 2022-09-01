@@ -3,11 +3,9 @@ pub mod config;
 pub mod cookies;
 #[cfg(feature = "xp")]
 pub mod level;
-pub mod prefix;
 
 pub use cookies::Cookies;
 pub use level::Level;
-pub use prefix::Prefix;
 use rand::{thread_rng, Rng};
 use serenity::{client::Context, model::channel::Message};
 use tokio::sync::RwLock;

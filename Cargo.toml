@@ -30,8 +30,6 @@ features = ["client", "gateway", "rustls_backend", "model", "cache"]
 
 [features]
 default = [
-    "legacy_commands",
-    "custom_prefix",
     "save_data",
     "respond_server",
     "respond_dm",
@@ -39,8 +37,6 @@ default = [
     "xp",
     "tic_tac_toe",
 ]
-legacy_commands = []
-custom_prefix = ["legacy_commands"]
 commands_home_only = []
 respond_dm = []
 respond_server = []

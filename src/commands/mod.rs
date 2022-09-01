@@ -5,10 +5,10 @@ pub mod info;
 pub mod level_cookies;
 #[cfg(feature = "tic_tac_toe")]
 pub mod tic_tac_toe;
-use serenity::builder::CreateApplicationCommands;
-use serenity::client::Context;
-use serenity::model::application::command::CommandOptionType;
-use serenity::model::channel::Message;
+
+use serenity::{
+    builder::CreateApplicationCommands, model::application::command::CommandOptionType,
+};
 
 #[allow(clippy::too_many_lines)]
 pub fn commands(commands: &mut CreateApplicationCommands) -> &mut CreateApplicationCommands {
@@ -136,48 +136,4 @@ pub fn commands(commands: &mut CreateApplicationCommands) -> &mut CreateApplicat
                         .required(true)
                 })
         })
-}
-#[cfg(feature = "legacy_commands")]
-pub async fn parse(prefix: &str, mut msg: Message, ctx: Context) {
-    if !msg.content.starts_with(&prefix) {
-        // print out the prefix if the bot is mentioned
-        if let Ok(true) = msg.mentions_me(&ctx.http).await {
-            msg.channel_id
-                .say(
-                    &ctx.http,
-                    format!("Hi, {}! The current prefix is {prefix}", msg.author),
-                )
-                .await
-                .map_err(|why| eprintln!("An Error occured: {why}"))
-                .ok();
-        }
-        return;
-    }
-    // split command off of the message, make command lowercase for case insensitivity
-    msg.content = msg.content.replacen(&prefix, "", 1);
-    let command = msg
-        .content
-        .split_whitespace()
-        .next()
-        .unwrap_or(" ")
-        .to_lowercase();
-    msg.content = msg.content.replacen(&command, "", 1).replacen(' ', "", 1);
-    // matches for correct command, hands over ctx, msg
-    let command_result = match command.as_str() {
-        // "cmd" => category::cmd(ctx, msg).await, // Comment on what this does
-        "ping" => info::ping(ctx, msg).await,      // send pong!
-        "prefix" => admin::prefix(ctx, msg).await, // change prefix
-        "kick" => admin::kick(ctx, msg).await,     // kick all users mentioned in the message
-        "ban" => admin::ban(ctx, msg).await,       // ban all users mentioned in the message
-        "unban" => admin::unban(ctx, msg).await,   // unban all users mentioned in the message
-        "pic" => info::pic(ctx, msg).await, // send profile picture of msg.author or all users mentioned
-        "delete" => admin::delete(ctx, msg).await, // delete specified amount of messages
-        "id" => info::id(ctx, msg).await,   // get id of all mentioned users/roles/channels, etc.
-        "roll" => fun::roll(ctx, msg).await, // roll dice according to arg
-        "coin" => fun::coin(ctx, msg).await, // flip a coin
-        _ => Ok(()),
-    };
-    if let Err(why) = command_result {
-        eprintln!("An Error occured: {:?}", why);
-    }
 }
