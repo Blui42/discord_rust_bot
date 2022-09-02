@@ -68,7 +68,7 @@ impl EventHandler for Handler {
                 .await
                 .unwrap_or_else(|why| eprintln!("An Error occured: {why}")),
             Err(e) => {
-                eprintln!("------------\n{e:?}\n------------");
+                eprintln!("------------\n{e:?}\n------------\n{command:?}\n------------");
                 command
                     .create_interaction_response(&ctx.http, |response| {
                         response
