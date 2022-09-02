@@ -5,6 +5,7 @@ mod data;
 use anyhow::Context as _;
 use data::{config::Config, Data};
 use dotenv::dotenv;
+use rand::Rng as _;
 use serenity::{
     model::{
         application::{
@@ -23,11 +24,27 @@ struct Handler;
 #[allow(clippy::no_effect_underscore_binding)]
 #[serenity::async_trait]
 impl EventHandler for Handler {
+    #[cfg(any(feature = "xp", feature = "cookies"))]
     async fn message(&self, ctx: Context, msg: Message) {
-        // ignore messages from bots
-        if (!msg.author.bot) && (!msg.is_private()) {
+        if !msg.author.bot {
             // give xp and cookies to user
-            data::reward_user(&msg, &ctx).await;
+            let author_id = msg.author.id.0;
+            if let Some((guild_id, data_lock)) =
+                msg.guild_id.zip(ctx.data.read().await.get::<Data>())
+            {
+                let mut data = data_lock.write().await;
+                let mut rng = rand::thread_rng();
+
+                #[cfg(feature = "cookies")]
+                data.cookies.give(author_id, rng.gen_range(0..2));
+
+                #[cfg(feature = "xp")]
+                {
+                    let xp = rng.gen_range(0..5);
+                    data.level.add_xp(author_id, 0, xp); // global xp
+                    data.level.add_xp(author_id, guild_id.0, xp); // guild-specific xp
+                }
+            }
         }
     }
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
