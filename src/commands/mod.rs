@@ -7,7 +7,8 @@ pub mod level_cookies;
 pub mod tic_tac_toe;
 
 use serenity::{
-    builder::CreateApplicationCommands, model::application::command::CommandOptionType,
+    builder::CreateApplicationCommands,
+    model::{application::command::CommandOptionType, Permissions},
 };
 
 #[allow(clippy::too_many_lines)]
@@ -135,5 +136,6 @@ pub fn commands(commands: &mut CreateApplicationCommands) -> &mut CreateApplicat
                         .kind(CommandOptionType::Integer)
                         .required(true)
                 })
+                .default_member_permissions(Permissions::MANAGE_MESSAGES)
         })
 }
