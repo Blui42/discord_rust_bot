@@ -25,22 +25,10 @@ struct Handler;
 impl EventHandler for Handler {
     async fn message(&self, ctx: Context, msg: Message) {
         // ignore messages from bots
-        if msg.author.bot {
-            return;
+        if (!msg.author.bot) && (!msg.is_private()) {
+            // give xp and cookies to user
+            data::reward_user(&msg, &ctx).await;
         }
-
-        #[cfg(not(feature = "respond_dm"))]
-        if msg.is_private() {
-            return;
-        }
-
-        #[cfg(not(feature = "respond_server"))]
-        if !msg.is_private() {
-            return;
-        }
-
-        // gives xp and cookies to user
-        data::reward_user(&msg, &ctx).await;
     }
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
         let command = if let Interaction::ApplicationCommand(command) = interaction {
