@@ -115,9 +115,7 @@ async fn main() -> Result<(), anyhow::Error> {
     // create client
     let mut client: Client = Client::builder(
         &token,
-        GatewayIntents::GUILD_MESSAGES
-            | GatewayIntents::DIRECT_MESSAGES
-            | GatewayIntents::GUILD_BANS,
+        GatewayIntents::GUILD_MESSAGES | GatewayIntents::DIRECT_MESSAGES,
     )
     .application_id(application_id)
     .event_handler(Handler)
