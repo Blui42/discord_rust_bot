@@ -23,10 +23,13 @@ impl<'a> Level<'a> {
         }
         self.add_guild(guild);
     }
-    pub fn add_xp(&mut self, user: u64, guild: u64, xp: u64) {
+    pub fn add_guild_xp(&mut self, user: u64, guild: u64, xp: u64) {
         let mut current_level = self.get(user, guild).unwrap_or_default();
         current_level.add_xp(xp);
         self.set(user, guild, &current_level);
+    }
+    pub fn add_global_xp(&mut self, user: u64, xp: u64) {
+        self.add_guild_xp(user, 0, xp);
     }
 
     fn add_guild(&mut self, guild: u64) {

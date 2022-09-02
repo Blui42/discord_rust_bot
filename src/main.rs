@@ -41,8 +41,8 @@ impl EventHandler for Handler {
                 #[cfg(feature = "xp")]
                 {
                     let xp = rng.gen_range(0..5);
-                    data.level.add_xp(author_id, 0, xp); // global xp
-                    data.level.add_xp(author_id, guild_id.0, xp); // guild-specific xp
+                    data.level.add_global_xp(author_id, xp);
+                    data.level.add_guild_xp(author_id, guild_id.0, xp);
                 }
             }
         }
