@@ -12,20 +12,16 @@ pub async fn id<'a>(
 ) -> Result<Cow<'a, str>> {
     let subcommand = options.get(0).context("Missing Subcommand")?;
     match subcommand.name.as_str() {
-        "user" | "channel" => Ok(subcommand
+        "user" | "channel" => subcommand
             .options
             .get(0)
-            .context("Missing Argument (API out of sync?)")?
-            .value
-            .as_ref()
-            .context("Missing Argument Value (API out of sync?)")?
-            .as_str()
-            .context("Argument was not a String! (I may need an update?)")?
-            .into()),
-        "server" => match guild_id {
-            Some(a) => Ok(a.0.to_string().into()),
-            None => Ok("This can only be used while on a server".into()),
-        },
+            .and_then(|arg| arg.value.as_ref())
+            .and_then(serde_json::Value::as_str)
+            .map(Into::into)
+            .ok_or_else(|| anyhow::anyhow!("Missing Argument (API out of sync?)")),
+        "server" => guild_id.map_or(Ok("This can only be used on servers".into()), |id| {
+            Ok(id.0.to_string().into())
+        }),
         _ => Ok("Something went wrong".into()),
     }
 }
