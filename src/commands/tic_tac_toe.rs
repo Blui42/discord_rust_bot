@@ -27,12 +27,8 @@ pub async fn command<'a>(
     }
 }
 
-pub async fn make_request(
-    opponent: UserId,
-    ctx: &Context,
-    user: &User,
-) -> Result<Cow<'static, str>> {
-    if opponent == user.id {
+pub async fn make_request(opponent: User, ctx: &Context, user: &User) -> Result<Cow<'static, str>> {
+    if opponent.id == user.id {
         return Ok("That would be kind of sad".into());
     }
     let data = ctx.data.read().await;
@@ -49,23 +45,25 @@ pub async fn make_request(
             )
             .into());
         }
-        if game.has_player(opponent) {
-            return Ok(format!("{} is already in a game!", user.tag()).into());
+        if game.has_player(opponent.id) {
+            return Ok(format!("{} is already in a game!", opponent.tag()).into());
         }
     }
+    drop(current_games);
     let game_queue = data.get::<Queue>().context("get game queue")?.read().await;
     for game in game_queue.iter() {
-        if game.player_2 == opponent && game.player_1 == user.id {
+        if game.player_1 == user.id {
             return Ok(format!(
-                "You have already requested a game against {}!",
-                opponent.to_user(&ctx.http).await?.tag()
+                "You have already requested a game against <@{}>!",
+                game.player_2
             )
             .into());
         }
     }
+    drop(game_queue);
     let mut game_queue = data.get::<Queue>().context("Get game queue")?.write().await;
-    game_queue.push(TicTacToe::new(user.id, opponent));
-    Ok(format!("You challanged {}!", opponent.mention()).into())
+    game_queue.push(TicTacToe::new(user.id, opponent.id));
+    Ok(format!("You challenged {}!", opponent.mention()).into())
 }
 
 pub async fn cancel_game<'a>(
@@ -89,7 +87,8 @@ pub async fn cancel_game<'a>(
 
     let data = ctx.data.read().await;
     let game_queue = data.get::<Queue>().context("get game queue")?.read().await;
-    if let Some(index) = find_game_index2(user.id, opponent, game_queue.as_slice()).await {
+    if let Some(index) = find_game_with_either(game_queue.iter(), user, opponent) {
+        drop(game_queue);
         data.get::<Queue>()
             .context("get game queue")?
             .write()
@@ -103,7 +102,8 @@ pub async fn cancel_game<'a>(
         .context("get running games")?
         .read()
         .await;
-    if let Some(index) = find_game_index2(user.id, opponent, running_games.as_slice()).await {
+    if let Some(index) = find_game_with_either(running_games.iter(), user, opponent) {
+        drop(running_games);
         data.get::<Running>()
             .context("get running games")?
             .write()
@@ -114,6 +114,22 @@ pub async fn cancel_game<'a>(
     Ok("There was no game to cancel".into())
 }
 
+fn find_game_with_either<'a>(
+    game_queue: impl Iterator<Item = &'a TicTacToe>,
+    user: &User,
+    opponent: Option<&UserId>,
+) -> Option<usize> {
+    game_queue
+        .enumerate()
+        .find(|(_, game)| {
+            game.has_player(user.id)
+                && opponent
+                    .and_then(|opponent| (!game.has_player(*opponent)).then(|| ()))
+                    .is_none()
+        })
+        .map(|(index, _)| index)
+}
+
 pub async fn start_game<'a>(
     options: &'a [CommandDataOption],
     ctx: &Context,
@@ -122,7 +138,7 @@ pub async fn start_game<'a>(
     // This will be Some(opponent) if the user spefified an opponent, otherwise None.
     let opponent = if let Some(a) = options.get(0) {
         match a.resolved.as_ref().context("get field `opponent`")? {
-            CommandDataOptionValue::User(opponent, _) => Some(opponent.id),
+            CommandDataOptionValue::User(opponent, _) => Some(opponent),
             x => bail!(
                 "In {}/{}: opponent was of incorrect type: Expected User, got {x:?}```",
                 file!(),
@@ -132,11 +148,16 @@ pub async fn start_game<'a>(
     } else {
         None
     };
-    println!("{:#?}", opponent);
 
     let data = ctx.data.read().await;
     let mut game_queue = data.get::<Queue>().context("get game queue")?.write().await;
-    if let Some(index) = find_game_index(user.id, opponent.as_ref(), game_queue.as_slice()).await {
+    if let Some(index) = find_game_index(
+        user.id,
+        opponent.map(|o| o.id).as_ref(),
+        game_queue.as_slice(),
+    )
+    .await
+    {
         let game = game_queue.swap_remove(index);
         let mut running_games = data
             .get::<Running>()
@@ -146,7 +167,8 @@ pub async fn start_game<'a>(
         running_games.push(game);
         Ok("Game initiated! Use `/ttt set <1-9>` to play!".into())
     } else if let Some(opp) = opponent {
-        make_request(opp, ctx, user).await
+        drop(game_queue);
+        make_request(opp.clone(), ctx, user).await
     } else {
         Ok("You have no incoming requests".into())
     }
@@ -171,7 +193,7 @@ pub async fn mark_field<'a>(
     {
         a
     } else {
-        return Ok("You don't have a running game!".into());
+        return Ok("You're not in a running game!".into());
     };
     let field_number = options
         .get(0)
@@ -183,19 +205,17 @@ pub async fn mark_field<'a>(
         .unwrap_or(10)
         .try_into()
         .unwrap_or(10_usize);
-    if field_number == 0 || field_number > 9 {
+    let field_value = if let Some(field) = game.get(field_number.wrapping_sub(1)) {
+        *field
+    } else {
         return Ok("That is not a valid field!".into());
-    }
-    if *game
-        .get(field_number)
-        .context("field index out of bounds")?
-        == 0
-    {
+    };
+    if field_value == 0 {
         let player = game.player_number(user.id);
         if game.previous_player == player {
             return Ok("It's not your turn!".into());
         }
-        game.insert(player, field_number as usize)
+        game.insert(player, field_number - 1)
             .context("index out of bounds")?;
         game.previous_player = player;
     }
@@ -216,19 +236,6 @@ pub async fn find_game_index(
 ) -> Option<usize> {
     for (index, game) in games.iter().enumerate() {
         if game.player_2 == opponent && (host.is_none() || game.player_1 == *host?) {
-            return Some(index);
-        }
-    }
-    None
-}
-
-pub async fn find_game_index2(
-    host: UserId,
-    opponent: Option<&UserId>,
-    games: &[TicTacToe],
-) -> Option<usize> {
-    for (index, game) in games.iter().enumerate() {
-        if game.player_1 == host && (opponent.is_none() || game.player_2 == *opponent?) {
             return Some(index);
         }
     }
@@ -322,12 +329,12 @@ impl TicTacToe {
     /// ## Return
     /// Returns `Some(())` on Success and `None` on Failure
     pub fn insert(&mut self, player: u8, field: usize) -> Option<()> {
-        *self.field.get_mut(field + 1)? = player;
+        *self.field.get_mut(field)? = player;
         Some(())
     }
 
     pub fn get(&self, field: usize) -> Option<&u8> {
-        self.field.get(field + 1)
+        self.field.get(field)
     }
 }
 
