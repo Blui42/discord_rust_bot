@@ -28,28 +28,26 @@ fn roll_dice(rolls: u8, sides: u8) -> (u16, u8, u8, Vec<u8>) {
     (total, min, max, summary)
 }
 pub async fn roll(options: &[CommandDataOption]) -> Result<Cow<'_, str>> {
-    let rolls: i64 = options
+    let rolls: u8 = options
         .get(0)
         .and_then(|arg| arg.value.as_ref())
-        .and_then(serde_json::Value::as_i64)
+        .and_then(serde_json::Value::as_u64)
+        .and_then(|x| TryFrom::try_from(x).ok())
         .context("Missing rolls argument")?;
-    let sides: i64 = options
+    let sides: u8 = options
         .get(1)
         .and_then(|arg| arg.value.as_ref())
-        .and_then(serde_json::Value::as_i64)
+        .and_then(serde_json::Value::as_u64)
+        .and_then(|x| TryFrom::try_from(x).ok())
         .context("Missing sides argument")?;
-    if rolls < 0 || sides < 0 {
-        Ok("<= !em pleH <=".into())
-    } else if rolls == 0 {
+    if rolls == 0 {
         Ok("Rolled no dice. (What did you expect?)".into())
     } else if sides == 0 {
         Ok("0-sided dice are too dangerous to use.".into())
     } else if sides == 1 {
         Ok("*Throws a ball*".into())
-    } else if rolls > 255 || sides > 255 {
-        Ok("A number that I'm too lazy to calculate (Try numbers 255 and below)".into())
     } else {
-        let (total, min, max, summary) = roll_dice(rolls.to_le_bytes()[0], sides.to_le_bytes()[0]);
+        let (total, min, max, summary) = roll_dice(rolls, sides);
         Ok(format!("**Rolled {rolls} {sides}-sided dice.** \n**Result: `{total}`**\n Rolled {min}x1 and {max}x{sides} \n\n Detailed: ```\n{summary:?}\n```").into())
     }
 }

@@ -72,6 +72,8 @@ pub fn commands(commands: &mut CreateApplicationCommands) -> &mut CreateApplicat
                         .name("rolls")
                         .description("The amount of dice to roll")
                         .kind(CommandOptionType::Integer)
+                        .min_int_value(0)
+                        .max_int_value(255)
                         .required(true)
                 })
                 .create_option(|option| {
@@ -79,6 +81,8 @@ pub fn commands(commands: &mut CreateApplicationCommands) -> &mut CreateApplicat
                         .name("sides")
                         .description("the amount of sides the thrown dice have")
                         .kind(CommandOptionType::Integer)
+                        .min_int_value(0)
+                        .max_int_value(255)
                         .required(true)
                 })
         })
@@ -107,8 +111,10 @@ pub fn commands(commands: &mut CreateApplicationCommands) -> &mut CreateApplicat
                         .create_sub_option(|sub_option| {
                             sub_option
                                 .name("field")
-                                .description("Should be from 1-9")
+                                .description("The field is numbered horizontally")
                                 .kind(CommandOptionType::Integer)
+                                .min_int_value(1)
+                                .max_int_value(9)
                                 .required(true)
                         })
                 })
@@ -134,6 +140,8 @@ pub fn commands(commands: &mut CreateApplicationCommands) -> &mut CreateApplicat
                         .name("count")
                         .description("The amount of messages to delete")
                         .kind(CommandOptionType::Integer)
+                        .min_int_value(1)
+                        .max_int_value(100)
                         .required(true)
                 })
                 .default_member_permissions(Permissions::MANAGE_MESSAGES)

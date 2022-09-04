@@ -188,7 +188,7 @@ pub async fn mark_field<'a>(
         .write()
         .await;
 
-    let (index, game) = if let Some(a) = games
+    let (index, game): (usize, &mut TicTacToe) = if let Some(a) = games
         .iter_mut()
         .enumerate()
         .find(|(_, game)| game.has_player(user.id))
@@ -197,16 +197,12 @@ pub async fn mark_field<'a>(
     } else {
         return Ok("You're not in a running game!".into());
     };
-    let field_number = options
+    let field_number: usize = options
         .get(0)
-        .context("missing field `number`")?
-        .value
-        .as_ref()
-        .context("missing field `number`")?
-        .as_u64()
-        .unwrap_or(10)
-        .try_into()
-        .unwrap_or(10_usize);
+        .and_then(|arg| arg.value.as_ref())
+        .and_then(serde_json::Value::as_u64)
+        .and_then(|x| TryFrom::try_from(x).ok())
+        .context("Argument `field` was missing or invalid")?;
     let field_value = if let Some(field) = game.get(field_number.wrapping_sub(1)) {
         *field
     } else {
