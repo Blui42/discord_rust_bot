@@ -118,10 +118,7 @@ fn find_game_with_either<'a>(
     game_queue
         .enumerate()
         .find(|(_, game)| {
-            game.has_player(user.id)
-                && opponent
-                    .and_then(|opponent| (!game.has_player(*opponent)).then(|| ()))
-                    .is_none()
+            game.has_player(user.id) && opponent.map_or(true, |opp| game.has_player(*opp))
         })
         .map(|(index, _)| index)
 }
