@@ -150,15 +150,17 @@ pub async fn start_game<'a>(
     };
 
     let data = ctx.data.read().await;
-    let mut game_queue = data.get::<Queue>().context("get game queue")?.write().await;
-    if let Some(index) = find_game_index(
+    let queue = data.get::<Queue>().context("get game queue")?;
+    // Without the let it doesn't work for some reason
+    #[allow(clippy::let_and_return)]
+    let result = if let Some(index) = find_game_index(
         user.id,
         opponent.map(|o| o.id).as_ref(),
-        game_queue.as_slice(),
+        queue.read().await.iter(),
     )
     .await
     {
-        let game = game_queue.swap_remove(index);
+        let game = queue.write().await.swap_remove(index);
         let mut running_games = data
             .get::<Running>()
             .context("get running games")?
@@ -167,11 +169,11 @@ pub async fn start_game<'a>(
         running_games.push(game);
         Ok("Game initiated! Use `/ttt set <1-9>` to play!".into())
     } else if let Some(opp) = opponent {
-        drop(game_queue);
         make_request(opp.clone(), ctx, user).await
     } else {
         Ok("You have no incoming requests".into())
-    }
+    };
+    result
 }
 
 pub async fn mark_field<'a>(
@@ -232,9 +234,9 @@ pub async fn mark_field<'a>(
 pub async fn find_game_index(
     opponent: UserId,
     host: Option<&UserId>,
-    games: &[TicTacToe],
+    games: impl Iterator<Item = &TicTacToe>,
 ) -> Option<usize> {
-    for (index, game) in games.iter().enumerate() {
+    for (index, game) in games.enumerate() {
         if game.player_2 == opponent && (host.is_none() || game.player_1 == *host?) {
             return Some(index);
         }
