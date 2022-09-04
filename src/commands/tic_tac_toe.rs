@@ -206,11 +206,14 @@ pub async fn mark_field<'a>(
     }
 
     let winner = game.check_all();
-    if winner == 0 {
-        Ok(format!("{:#}", game).into())
-    } else {
+    if winner != 0 {
         let game = games.swap_remove(index);
         Ok(format!("Player {winner} has won!\nPlaying field: \n{game}").into())
+    } else if game.is_full() {
+        let game = games.swap_remove(index);
+        Ok(format!("It's a tie!\nPlaying field: \n{game}").into())
+    } else {
+        Ok(format!("{:#}", game).into())
     }
 }
 
@@ -294,6 +297,10 @@ impl TicTacToe {
         } else {
             0
         }
+    }
+
+    pub fn is_full(&self) -> bool {
+        self.field.iter().all(|square| *square == 0)
     }
 
     pub fn check_all(&self) -> u8 {
