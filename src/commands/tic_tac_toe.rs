@@ -10,7 +10,7 @@ use serenity::{
     },
     prelude::*,
 };
-use std::{borrow::Cow, fmt};
+use std::{borrow::Cow, collections::HashMap, fmt};
 use tokio::sync::RwLock;
 
 pub async fn command<'a>(
@@ -50,20 +50,16 @@ pub async fn make_request(opponent: User, ctx: &Context, user: &User) -> Result<
         }
     }
     drop(current_games);
-    let game_queue = data.get::<Queue>().context("get game queue")?.read().await;
-    for game in game_queue.iter() {
-        if game.player_1 == user.id {
-            return Ok(format!(
-                "You have already requested a game against <@{}>!",
-                game.player_2
-            )
-            .into());
-        }
-    }
-    drop(game_queue);
     let mut game_queue = data.get::<Queue>().context("Get game queue")?.write().await;
-    game_queue.push(TicTacToe::new(user.id, opponent.id));
-    Ok(format!("You challenged {}!", opponent.mention()).into())
+    let opponent_mentioned = opponent.mention();
+    match game_queue.insert(user.clone(), opponent) {
+        Some(previous_opponent) => Ok(format!(
+            "Ypu cancelled your game against {} and challenged {opponent_mentioned}",
+            previous_opponent.tag()
+        )
+        .into()),
+        None => Ok(format!("You challenged {}!", opponent_mentioned).into()),
+    }
 }
 
 pub async fn cancel_game<'a>(
@@ -87,13 +83,13 @@ pub async fn cancel_game<'a>(
 
     let data = ctx.data.read().await;
     let game_queue = data.get::<Queue>().context("get game queue")?.read().await;
-    if let Some(index) = find_game_with_either(game_queue.iter(), user, opponent) {
+    if game_queue.contains_key(user) {
         drop(game_queue);
         data.get::<Queue>()
             .context("get game queue")?
             .write()
             .await
-            .swap_remove(index);
+            .remove(user);
         return Ok("Cancelled game.".into());
     }
 
@@ -153,20 +149,14 @@ pub async fn start_game<'a>(
     let queue = data.get::<Queue>().context("get game queue")?;
     // Without the let it doesn't work for some reason
     #[allow(clippy::let_and_return)]
-    let result = if let Some(index) = find_game_index(
-        user.id,
-        opponent.map(|o| o.id).as_ref(),
-        queue.read().await.iter(),
-    )
-    .await
-    {
-        let game = queue.write().await.swap_remove(index);
+    let result = if let Some(opponent) = find_game(user, opponent, &*queue.read().await).await {
+        queue.write().await.remove(opponent);
         let mut running_games = data
             .get::<Running>()
             .context("get running games")?
             .write()
             .await;
-        running_games.push(game);
+        running_games.push(TicTacToe::new(user.id, opponent.id));
         Ok("Game initiated! Use `/ttt set <1-9>` to play!".into())
     } else if let Some(opp) = opponent {
         make_request(opp.clone(), ctx, user).await
@@ -227,17 +217,15 @@ pub async fn mark_field<'a>(
     }
 }
 
-pub async fn find_game_index(
-    opponent: UserId,
-    host: Option<&UserId>,
-    games: impl Iterator<Item = &TicTacToe>,
-) -> Option<usize> {
-    for (index, game) in games.enumerate() {
-        if game.player_2 == opponent && (host.is_none() || game.player_1 == *host?) {
-            return Some(index);
-        }
+pub async fn find_game<'a>(
+    opponent: &'_ User,
+    host: Option<&'a User>,
+    games: &'a HashMap<User, User>,
+) -> Option<&'a User> {
+    if let Some(host) = host {
+        return (games.get(host) == Some(opponent)).then_some(host);
     }
-    None
+    games.iter().find(|(_, o)| **o == *opponent).map(|h| h.0)
 }
 
 #[derive(Clone, PartialEq, Eq)]
@@ -377,5 +365,5 @@ impl TypeMapKey for Running {
 }
 pub struct Queue;
 impl TypeMapKey for Queue {
-    type Value = RwLock<Vec<TicTacToe>>;
+    type Value = RwLock<HashMap<User, User>>;
 }

@@ -16,9 +16,9 @@ use serenity::{
     },
     prelude::*,
 };
+use std::collections::HashMap;
 use std::env;
 use tokio::time::{sleep, Duration};
-
 struct Handler;
 
 #[allow(clippy::no_effect_underscore_binding)]
@@ -132,9 +132,9 @@ async fn main() -> Result<(), anyhow::Error> {
         client_data.insert::<Config>(config);
 
         #[cfg(feature = "tic_tac_toe")]
-        client_data.insert::<commands::tic_tac_toe::Running>(RwLock::new(Vec::with_capacity(3)));
+        client_data.insert::<commands::tic_tac_toe::Running>(RwLock::new(Vec::new()));
         #[cfg(feature = "tic_tac_toe")]
-        client_data.insert::<commands::tic_tac_toe::Queue>(RwLock::new(Vec::with_capacity(3)));
+        client_data.insert::<commands::tic_tac_toe::Queue>(RwLock::new(HashMap::new()));
     }
 
     let shard_manager = client.shard_manager.clone();
