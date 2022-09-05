@@ -299,7 +299,7 @@ impl TicTacToe {
     }
 
     pub fn is_full(&self) -> bool {
-        self.field.iter().all(|square| *square == 0)
+        self.field.iter().all(|square| *square != 0)
     }
 
     pub fn check_all(&self) -> u8 {
