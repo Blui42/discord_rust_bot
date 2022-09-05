@@ -260,10 +260,10 @@ impl TicTacToe {
     }
 
     pub fn opponent(&self, player: UserId) -> Option<UserId> {
-        if player.0 == self.player_1.0 {
+        if player == self.player_1 {
             return Some(self.player_2);
         }
-        if player.0 == self.player_2.0 {
+        if player == self.player_2 {
             return Some(self.player_1);
         }
         None
