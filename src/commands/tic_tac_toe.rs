@@ -175,14 +175,13 @@ pub async fn mark_field<'a>(
         .write()
         .await;
 
-    let (index, game): (usize, &mut TicTacToe) = if let Some(a) = games
+    let (index, game): (usize, &mut TicTacToe) = match games
         .iter_mut()
         .enumerate()
         .find(|(_, game)| game.has_player(user.id))
     {
-        a
-    } else {
-        return Ok("You're not in a running game!".into());
+        Some(a) => a,
+        None => return Ok("You're not in a running game!".into()),
     };
     let field_number: usize = options
         .get(0)
