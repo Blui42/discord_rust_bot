@@ -117,13 +117,10 @@ async fn main() -> Result<(), anyhow::Error> {
         a => a,
     };
     // create client
-    let mut client: Client = Client::builder(
-        &token,
-        GatewayIntents::GUILD_MESSAGES | GatewayIntents::DIRECT_MESSAGES,
-    )
-    .application_id(application_id)
-    .event_handler(Handler)
-    .await?;
+    let mut client = Client::builder(&token, GatewayIntents::GUILD_MESSAGES)
+        .application_id(application_id)
+        .event_handler(Handler)
+        .await?;
 
     {
         let mut client_data = client.data.write().await;
