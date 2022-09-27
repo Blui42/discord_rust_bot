@@ -16,8 +16,8 @@ use serenity::{
     },
     prelude::*,
 };
-use std::collections::HashMap;
 use std::env;
+use std::{collections::HashMap, sync::Arc};
 use tokio::time::{sleep, Duration};
 struct Handler;
 
@@ -124,7 +124,7 @@ async fn main() -> Result<(), anyhow::Error> {
 
     {
         let mut client_data = client.data.write().await;
-        client_data.insert::<Data>(RwLock::new(Data::new()));
+        client_data.insert::<Data>(Arc::new(RwLock::new(Data::new())));
         client_data.insert::<Config>(config);
 
         #[cfg(feature = "tic_tac_toe")]
@@ -145,21 +145,12 @@ async fn main() -> Result<(), anyhow::Error> {
 
     // automatically save every 10 minutes
     #[cfg(feature = "save_data")]
-    {
-        let client_data = client.data.clone();
+    if let Some(client_data) = client.data.read().await.get::<Data>().cloned() {
         tokio::spawn(async move {
             loop {
                 sleep(Duration::from_secs(600)).await;
                 println!("Saving...");
-                let res = client_data
-                    .read()
-                    .await
-                    .get::<Data>()
-                    .expect("Missing Data for saving!")
-                    .read()
-                    .await
-                    .save()
-                    .await;
+                let res = client_data.read().await.save().await;
                 if let Err(why) = res {
                     eprintln!("Error trying to save. Disabled saving. \nMore info: {why}");
                     return;

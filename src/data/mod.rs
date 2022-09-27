@@ -4,6 +4,8 @@ pub mod cookies;
 #[cfg(feature = "xp")]
 pub mod level;
 
+use std::sync::Arc;
+
 pub use cookies::Cookies;
 pub use level::Level;
 use tokio::sync::RwLock;
@@ -39,5 +41,5 @@ impl<'l, 'c> Data<'l, 'c> {
 }
 
 impl serenity::prelude::TypeMapKey for Data<'static, 'static> {
-    type Value = RwLock<Self>;
+    type Value = Arc<RwLock<Self>>;
 }
