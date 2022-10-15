@@ -103,19 +103,20 @@ async fn main() -> Result<(), anyhow::Error> {
         .into_string()
         .ok()
         .context("DISCORD_TOKEN contained non-UTF8 characters")?;
+
+    let bot_id = if let Some((id, _)) = serenity::utils::parse_token(&token) {
+        id
+    } else {
+        anyhow::bail!("DISCORD_TOKEN is invalid");
+    };
+
     let config = Config::from_file("config.toml").unwrap_or_default();
 
-    // Try to read Application ID from config.toml.
-    // On failure, try to derive Application ID from bot token.
-    let application_id = match config.application_id {
-        0 => {
-            serenity::utils::parse_token(&token)
-                .context("Application ID was not given and could not be derived from token.")?
-                .0
-                 .0
-        }
-        a => a,
-    };
+    // If the App ID is supplied in the config file, use it.
+    // Otherwise, use the Bot's user ID, which should be the
+    // same on recently created applications.
+    let application_id = config.application_id.map_or(bot_id.0, Into::into);
+
     // create client
     let mut client = Client::builder(&token, GatewayIntents::GUILD_MESSAGES)
         .application_id(application_id)

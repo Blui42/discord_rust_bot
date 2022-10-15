@@ -1,18 +1,24 @@
 #![allow(dead_code)]
 use serde::Deserialize;
-use std::fs;
+use std::{fs, num::NonZeroU64};
 extern crate toml;
 
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Deserialize, Debug)]
 pub struct Config {
-    pub application_id: u64,
-    pub home_server: u64,
-    pub home_channel: u64,
-    pub owners: Box<[u64]>,
-    pub legacy_commands: bool,
+    #[serde(default)]
+    pub application_id: Option<NonZeroU64>,
+    #[serde(default)]
+    pub home_server: Option<NonZeroU64>,
+    #[serde(default)]
+    pub home_channel: Option<NonZeroU64>,
+    #[serde(default)]
+    pub owners: Vec<u64>,
+    #[serde(default)]
     pub respond_dm: bool,
+    #[serde(default)]
     pub respond_server: bool,
+    #[serde(default)]
     pub commands_home_only: bool,
 }
 impl Config {
@@ -29,11 +35,10 @@ impl serenity::prelude::TypeMapKey for Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            application_id: 0,
-            home_server: 0,
-            home_channel: 0,
-            owners: Box::new([]),
-            legacy_commands: true,
+            application_id: None,
+            home_server: None,
+            home_channel: None,
+            owners: Vec::new(),
             respond_dm: true,
             respond_server: true,
             commands_home_only: false,
