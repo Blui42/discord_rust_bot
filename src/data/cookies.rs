@@ -1,26 +1,29 @@
-use serde_json::{self, Map, Value};
+use std::collections::HashMap;
 use std::fs;
 
 pub struct Cookies<'a> {
-    data: Map<String, Value>,
+    data: HashMap<String, u64>,
     path: &'a str,
 }
 
 impl<'a> Cookies<'a> {
+    // Might get relevant later in development
+    #[allow(dead_code)]
     pub fn get(&self, user: u64) -> Option<u64> {
-        self.data.get(&user.to_string())?.as_u64()
+        self.data.get(&user.to_string()).copied()
     }
+    #[allow(dead_code)]
     pub fn set(&mut self, user: u64, cookies: u64) {
-        self.data.insert(user.to_string(), Value::from(cookies));
+        self.data.insert(user.to_string(), cookies);
     }
     pub fn give(&mut self, user: u64, cookies: u64) {
-        self.set(user, self.get(user).unwrap_or(0) + cookies);
+        self.data.entry(user.to_string()).and_modify(|x| *x += cookies).or_default();
     }
 
     pub fn new(path: &'a str) -> Self {
         let file = fs::read_to_string(path);
         let file_contents: &str = file.as_ref().map_or("{}", |x| x);
-        let data: Map<String, Value> = serde_json::from_str(file_contents).unwrap_or_default();
+        let data: HashMap<_, _> = serde_json::from_str(file_contents).unwrap_or_default();
         Self { data, path }
     }
 

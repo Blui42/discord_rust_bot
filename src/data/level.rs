@@ -1,39 +1,41 @@
 use serde::{Deserialize, Serialize};
-use serde_json::{Map, Value};
+use std::collections::HashMap;
 use std::fs;
 
 pub struct Level<'a> {
-    data: Map<String, Value>,
+    data: HashMap<String, HashMap<String, XPCounter>>,
     path: &'a str,
 }
 
 impl<'a> Level<'a> {
+    // Might get relevant later in development
+    #[allow(dead_code)]
     pub fn get(&self, user: u64, guild: u64) -> Option<XPCounter> {
-        let a = self.data.get(&guild.to_string())?.get(user.to_string())?;
-        serde_json::from_value(a.clone()).ok()
+        self.data.get(&guild.to_string())?.get(&user.to_string()).cloned()
     }
-    pub fn set(&mut self, user: u64, guild: u64, to: &XPCounter) {
-        if let Some(a) = self.data.get_mut(&guild.to_string()).and_then(Value::as_object_mut) {
-            a.insert(user.to_string(), serde_json::to_value(to).unwrap());
-        }
-        self.add_guild(guild);
+    #[allow(dead_code)]
+    pub fn set(&mut self, user: u64, guild: u64, to: XPCounter) {
+        self.data
+            .entry(guild.to_string())
+            .or_insert_with(HashMap::new)
+            .insert(user.to_string(), to);
     }
     pub fn add_guild_xp(&mut self, user: u64, guild: u64, xp: u64) {
-        let mut current_level = self.get(user, guild).unwrap_or_default();
-        current_level.add_xp(xp);
-        self.set(user, guild, &current_level);
+        self.data
+            .entry(guild.to_string())
+            .or_insert_with(HashMap::new)
+            .entry(user.to_string())
+            .and_modify(|old_xp| old_xp.add_xp(xp))
+            .or_insert_with(|| XPCounter::new_with_xp(xp));
     }
     pub fn add_global_xp(&mut self, user: u64, xp: u64) {
         self.add_guild_xp(user, 0, xp);
     }
 
-    fn add_guild(&mut self, guild: u64) {
-        self.data.insert(guild.to_string(), serde_json::json!({}));
-    }
     pub fn new(path: &'a str) -> Self {
         let file = fs::read_to_string(&path);
         let file_contents: &str = file.as_ref().map_or("{}", |x| x);
-        let data: Map<String, Value> = serde_json::from_str(file_contents).unwrap_or_default();
+        let data: HashMap<_, _> = serde_json::from_str(file_contents).unwrap_or_default();
         Self { data, path }
     }
 
@@ -54,22 +56,34 @@ impl<'a> Drop for Level<'a> {
     }
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct XPCounter {
     pub level: u64,
     pub xp: u64,
 }
 impl XPCounter {
-    pub fn new() -> Self {
+    #[inline]
+    pub const fn new() -> Self {
         Self { level: 1, xp: 0 }
+    }
+
+    pub fn new_with_xp(xp: u64) -> Self {
+        let mut val = Self { level: 1, xp };
+        val.level_up();
+        val
     }
 
     pub fn add_xp(&mut self, extra_xp: u64) {
         self.xp += extra_xp;
-        let xp_target = self.level * 10;
+        self.level_up();
+    }
+
+    pub fn level_up(&mut self) {
+        let mut xp_target = self.level * 10;
         while self.xp > xp_target {
             self.xp -= xp_target;
             self.level += 1;
+            xp_target += 10;
         }
     }
 }
