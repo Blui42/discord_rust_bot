@@ -108,11 +108,9 @@ impl EventHandler for Handler {
 async fn main() -> Result<(), anyhow::Error> {
     dotenv().ok(); // place variables from .env into this enviroment
 
-    let token: String = env::var_os("DISCORD_TOKEN")
-        .context("Put DISCORD_TOKEN=YourTokenHere into the .env file the enviroment")?
-        .into_string()
+    let token: String = env::var("DISCORD_TOKEN")
         .ok()
-        .context("DISCORD_TOKEN contained non-UTF8 characters")?;
+        .context("Put DISCORD_TOKEN=YourTokenHere into the file '.env' or the enviroment")?;
 
     let bot_id = if let Some((id, _)) = serenity::utils::parse_token(&token) {
         id
