@@ -110,18 +110,27 @@ async fn main() -> Result<(), anyhow::Error> {
         anyhow::bail!("DISCORD_TOKEN is invalid");
     };
 
-    let config = Config::from_file("config.toml").unwrap_or_default();
+    let mut config = Config::from_file("config.toml").unwrap_or_default();
 
     // If the App ID is supplied in the config file, use it.
     // Otherwise, use the Bot's user ID, which should be the
     // same on recently created applications.
-    let application_id = config.application_id.map_or(bot_id.0, Into::into);
+    let application_id = config.application_id.take().map_or(bot_id.0, Into::into);
+    config.application_id = application_id.try_into().ok();
 
     // create client
     let mut client = Client::builder(&token, GatewayIntents::GUILD_MESSAGES)
         .application_id(application_id)
         .event_handler(Handler)
         .await?;
+
+    if let Ok(info) = client.cache_and_http.http.get_current_application_info().await {
+        if let Some(team) = info.team {
+            config.owners.extend(team.members.iter().map(|x| x.user.id.0));
+        } else {
+            config.owners.push(info.owner.id.0);
+        }
+    }
 
     {
         let mut client_data = client.data.write().await;
