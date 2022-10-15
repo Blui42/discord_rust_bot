@@ -136,9 +136,7 @@ async fn main() -> Result<(), anyhow::Error> {
 
     let shard_manager = client.shard_manager.clone();
     tokio::spawn(async move {
-        tokio::signal::ctrl_c()
-            .await
-            .expect("Could not register ctrl+c handler");
+        tokio::signal::ctrl_c().await.expect("Could not register ctrl+c handler");
         println!("Shutting Down...");
         shard_manager.lock().await.shutdown_all().await;
         println!("Successfully Shut Down");

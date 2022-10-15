@@ -16,9 +16,7 @@ pub async fn delete(
         .and_then(|arg| arg.value.as_ref())
         .and_then(serde_json::Value::as_u64)
         .context("Missing argument")?;
-    let messages = channel
-        .messages(ctx, |retriever| retriever.limit(amount))
-        .await?;
+    let messages = channel.messages(ctx, |retriever| retriever.limit(amount)).await?;
     channel.delete_messages(ctx, messages).await?;
     Ok("Now everyone knows you're censoring them!".into())
 }

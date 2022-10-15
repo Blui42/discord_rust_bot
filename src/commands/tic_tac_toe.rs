@@ -32,11 +32,7 @@ pub async fn make_request(opponent: User, ctx: &Context, user: &User) -> Result<
         return Ok("That would be kind of sad".into());
     }
     let data = ctx.data.read().await;
-    let current_games = data
-        .get::<Running>()
-        .context("get running games")?
-        .read()
-        .await;
+    let current_games = data.get::<Running>().context("get running games")?.read().await;
     for game in current_games.iter() {
         if let Some(oppnent) = game.opponent(user.id) {
             return Ok(format!(
@@ -85,26 +81,14 @@ pub async fn cancel_game<'a>(
     let game_queue = data.get::<Queue>().context("get game queue")?.read().await;
     if game_queue.contains_key(user) {
         drop(game_queue);
-        data.get::<Queue>()
-            .context("get game queue")?
-            .write()
-            .await
-            .remove(user);
+        data.get::<Queue>().context("get game queue")?.write().await.remove(user);
         return Ok("Cancelled game.".into());
     }
 
-    let running_games = data
-        .get::<Running>()
-        .context("get running games")?
-        .read()
-        .await;
+    let running_games = data.get::<Running>().context("get running games")?.read().await;
     if let Some(index) = find_game_with_either(running_games.iter(), user, opponent) {
         drop(running_games);
-        data.get::<Running>()
-            .context("get running games")?
-            .write()
-            .await
-            .swap_remove(index);
+        data.get::<Running>().context("get running games")?.write().await.swap_remove(index);
         return Ok("You gave up.".into());
     }
     Ok("There was no game to cancel".into())
@@ -148,11 +132,7 @@ pub async fn start_game<'a>(
     #[allow(clippy::let_and_return)]
     let result = if let Some(opponent) = find_game(user, opponent, &*queue.read().await).await {
         queue.write().await.remove(opponent);
-        let mut running_games = data
-            .get::<Running>()
-            .context("get running games")?
-            .write()
-            .await;
+        let mut running_games = data.get::<Running>().context("get running games")?.write().await;
         running_games.push(TicTacToe::new(user.id, opponent.id));
         Ok("Game initiated! Use `/ttt set <1-9>` to play!".into())
     } else if let Some(opp) = opponent {
@@ -169,20 +149,13 @@ pub async fn mark_field<'a>(
     user: &User,
 ) -> Result<Cow<'a, str>> {
     let data = ctx.data.read().await;
-    let mut games = data
-        .get::<Running>()
-        .context("get running games")?
-        .write()
-        .await;
+    let mut games = data.get::<Running>().context("get running games")?.write().await;
 
-    let (index, game): (usize, &mut TicTacToe) = match games
-        .iter_mut()
-        .enumerate()
-        .find(|(_, game)| game.has_player(user.id))
-    {
-        Some(a) => a,
-        None => return Ok("You're not in a running game!".into()),
-    };
+    let (index, game): (usize, &mut TicTacToe) =
+        match games.iter_mut().enumerate().find(|(_, game)| game.has_player(user.id)) {
+            Some(a) => a,
+            None => return Ok("You're not in a running game!".into()),
+        };
     let field_number: usize = options
         .get(0)
         .and_then(|arg| arg.value.as_ref())
@@ -199,8 +172,7 @@ pub async fn mark_field<'a>(
         if game.previous_player == player {
             return Ok("It's not your turn!".into());
         }
-        game.insert(player, field_number - 1)
-            .context("index out of bounds")?;
+        game.insert(player, field_number - 1).context("index out of bounds")?;
         game.previous_player = player;
     }
 
@@ -237,12 +209,7 @@ pub struct TicTacToe {
 
 impl TicTacToe {
     pub fn new(player_1: UserId, player_2: UserId) -> Self {
-        Self {
-            field: [0; 9],
-            player_1,
-            player_2,
-            previous_player: 0,
-        }
+        Self { field: [0; 9], player_1, player_2, previous_player: 0 }
     }
 
     pub fn has_player(&self, player: UserId) -> bool {

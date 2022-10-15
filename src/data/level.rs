@@ -14,11 +14,7 @@ impl<'a> Level<'a> {
         serde_json::from_value(a.clone()).ok()
     }
     pub fn set(&mut self, user: u64, guild: u64, to: &XPCounter) {
-        if let Some(a) = self
-            .data
-            .get_mut(&guild.to_string())
-            .and_then(Value::as_object_mut)
-        {
+        if let Some(a) = self.data.get_mut(&guild.to_string()).and_then(Value::as_object_mut) {
             a.insert(user.to_string(), serde_json::to_value(to).unwrap());
         }
         self.add_guild(guild);

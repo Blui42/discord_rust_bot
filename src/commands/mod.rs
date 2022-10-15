@@ -12,6 +12,7 @@ use serenity::{
 };
 
 #[allow(clippy::too_many_lines)]
+#[rustfmt::skip]
 pub fn commands(commands: &mut CreateApplicationCommands) -> &mut CreateApplicationCommands {
     commands
         .create_application_command(|command| {
