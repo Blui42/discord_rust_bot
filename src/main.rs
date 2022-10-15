@@ -89,8 +89,15 @@ impl EventHandler for Handler {
     }
     async fn ready(&self, ctx: Context, ready: Ready) {
         println!("{} is connected!", ready.user.tag());
-        drop(Command::set_global_application_commands(&ctx.http, commands::commands).await);
-        // drop(id::GuildId(792489181774479400).set_application_commands(&ctx.http, commands::commands).await);
+        let result = if let Some(guild) = ctx.data.read().await.get::<Config>().unwrap().home_server
+        {
+            id::GuildId(guild.into()).set_application_commands(&ctx.http, commands::commands).await
+        } else {
+            Command::set_global_application_commands(&ctx.http, commands::commands).await
+        };
+        if let Err(err) = result {
+            eprintln!("Failed to register commands. More info:\n {err:#?}");
+        }
     }
 }
 
