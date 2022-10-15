@@ -1,5 +1,3 @@
-#![cfg(feature = "cookies")]
-
 use serde_json::{self, Map, Value};
 use std::fs;
 

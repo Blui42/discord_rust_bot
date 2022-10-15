@@ -26,17 +26,3 @@ features = ["macros", "rt-multi-thread", "time", "signal"]
 version = "0.11.4"
 default-features = false
 features = ["client", "gateway", "rustls_backend", "model", "cache"]
-
-
-[features]
-default = [
-    "save_data",
-    "cookies",
-    "xp",
-    "tic_tac_toe",
-]
-commands_home_only = []
-cookies = []
-xp = []
-save_data = []
-tic_tac_toe = []

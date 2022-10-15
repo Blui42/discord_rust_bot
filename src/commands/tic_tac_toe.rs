@@ -1,4 +1,3 @@
-#![cfg(feature = "tic_tac_toe")]
 use anyhow::{bail, Context as _, Result};
 use serenity::{
     model::{

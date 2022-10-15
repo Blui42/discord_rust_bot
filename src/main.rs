@@ -24,29 +24,32 @@ struct Handler;
 #[allow(clippy::no_effect_underscore_binding)]
 #[serenity::async_trait]
 impl EventHandler for Handler {
-    #[cfg(any(feature = "xp", feature = "cookies"))]
     async fn message(&self, ctx: Context, msg: Message) {
-        if !msg.author.bot {
-            // give xp and cookies to user
-            let author_id = msg.author.id.0;
-            if let Some((guild_id, data_lock)) =
-                msg.guild_id.zip(ctx.data.read().await.get::<Data>())
-            {
-                let mut data = data_lock.write().await;
-                let mut rng = rand::thread_rng();
+        if msg.author.bot {
+            return;
+        }
+        let &Config { levels, cookies, .. } = ctx.data.read().await.get::<Config>().unwrap();
+        if !(levels || cookies) {
+            return;
+        }
 
-                #[cfg(feature = "cookies")]
+        // give xp and cookies to user
+        let author_id = msg.author.id.0;
+        if let Some((guild_id, data_lock)) = msg.guild_id.zip(ctx.data.read().await.get::<Data>()) {
+            let mut data = data_lock.write().await;
+            let mut rng = rand::thread_rng();
+
+            if cookies {
                 data.cookies.give(author_id, rng.gen_range(0..2));
-
-                #[cfg(feature = "xp")]
-                {
-                    let xp = rng.gen_range(0..5);
-                    data.level.add_global_xp(author_id, xp);
-                    data.level.add_guild_xp(author_id, guild_id.0, xp);
-                }
+            }
+            if levels {
+                let xp = rng.gen_range(0..5);
+                data.level.add_global_xp(author_id, xp);
+                data.level.add_guild_xp(author_id, guild_id.0, xp);
             }
         }
     }
+
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
         let command = match interaction {
             Interaction::ApplicationCommand(command) => command,
@@ -144,9 +147,7 @@ async fn main() -> Result<(), anyhow::Error> {
         client_data.insert::<Data>(Arc::new(RwLock::new(Data::new())));
         client_data.insert::<Config>(config);
 
-        #[cfg(feature = "tic_tac_toe")]
         client_data.insert::<commands::tic_tac_toe::Running>(RwLock::new(Vec::new()));
-        #[cfg(feature = "tic_tac_toe")]
         client_data.insert::<commands::tic_tac_toe::Queue>(RwLock::new(HashMap::new()));
     }
 
@@ -159,7 +160,6 @@ async fn main() -> Result<(), anyhow::Error> {
     });
 
     // automatically save every 10 minutes
-    #[cfg(feature = "save_data")]
     if let Some(client_data) = client.data.read().await.get::<Data>().cloned() {
         tokio::spawn(async move {
             loop {

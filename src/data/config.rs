@@ -11,15 +11,11 @@ pub struct Config {
     #[serde(default)]
     pub home_server: Option<NonZeroU64>,
     #[serde(default)]
-    pub home_channel: Option<NonZeroU64>,
-    #[serde(default)]
     pub owners: Vec<u64>,
     #[serde(default)]
-    pub respond_dm: bool,
+    pub levels: bool,
     #[serde(default)]
-    pub respond_server: bool,
-    #[serde(default)]
-    pub commands_home_only: bool,
+    pub cookies: bool,
 }
 impl Config {
     pub fn from_file(path: &str) -> Option<Self> {
@@ -37,11 +33,9 @@ impl Default for Config {
         Self {
             application_id: None,
             home_server: None,
-            home_channel: None,
             owners: Vec::new(),
-            respond_dm: true,
-            respond_server: true,
-            commands_home_only: false,
+            cookies: true,
+            levels: true,
         }
     }
 }

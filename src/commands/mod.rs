@@ -3,7 +3,6 @@ pub mod admin;
 pub mod fun;
 pub mod info;
 pub mod level_cookies;
-#[cfg(feature = "tic_tac_toe")]
 pub mod tic_tac_toe;
 
 use serenity::{
