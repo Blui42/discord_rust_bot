@@ -161,18 +161,14 @@ pub async fn mark_field<'a>(
         .and_then(serde_json::Value::as_u64)
         .and_then(|x| TryFrom::try_from(x).ok())
         .context("Argument `field` was missing or invalid")?;
-    let field_value = if let Some(field) = game.get(field_number.wrapping_sub(1)) {
-        *field
-    } else {
-        return Ok("That is not a valid field!".into());
-    };
-    if field_value == 0 {
-        let player = game.player_number(user.id);
-        if game.previous_player == player {
-            return Ok("It's not your turn!".into());
-        }
-        game.insert(player, field_number - 1).context("index out of bounds")?;
-        game.previous_player = player;
+
+    let player = game.player_number(user.id);
+    let res = game.place(player, field_number);
+    match res {
+        Ok(()) => (),
+        Err(PlaceError::NotYourTurn) => return Ok("It's not your turn!".into()),
+        Err(PlaceError::OutOfBounds) => anyhow::bail!("Field was not in range 1-9"),
+        Err(PlaceError::AlreadyFull) => return Ok(format!("Sorry but no.\n{game:#}").into()),
     }
 
     let winner = game.check_all();
@@ -280,16 +276,19 @@ impl TicTacToe {
         self.check_diagonal()
     }
 
-    /// Insert a number into the field.
-    /// ## Return
-    /// Returns `Some(())` on Success and `None` on Failure
-    pub fn insert(&mut self, player: u8, field: usize) -> Option<()> {
-        *self.field.get_mut(field)? = player;
-        Some(())
-    }
+    pub fn place(&mut self, player: u8, field: usize) -> Result<(), PlaceError> {
+        use PlaceError::{AlreadyFull, NotYourTurn, OutOfBounds};
+        if self.previous_player == player {
+            return Err(NotYourTurn);
+        }
+        let field = self.field.get_mut(field).ok_or(OutOfBounds)?;
 
-    pub fn get(&self, field: usize) -> Option<&u8> {
-        self.field.get(field)
+        if *field != 0 {
+            return Err(AlreadyFull);
+        }
+
+        *field = player;
+        Ok(())
     }
 }
 
@@ -325,6 +324,21 @@ impl fmt::Display for TicTacToe {
             }
         }
         Ok(())
+    }
+}
+
+pub enum PlaceError {
+    AlreadyFull,
+    OutOfBounds,
+    NotYourTurn,
+}
+impl fmt::Display for PlaceError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            PlaceError::AlreadyFull => write!(f, "That field was already used!"),
+            PlaceError::OutOfBounds => write!(f, "That's not a valid field!"),
+            PlaceError::NotYourTurn => write!(f, "It's not your turn!"),
+        }
     }
 }
 
