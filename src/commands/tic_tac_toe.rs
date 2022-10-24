@@ -175,7 +175,7 @@ pub async fn mark_field<'a>(
     if winner != 0 {
         let game = games.swap_remove(index);
         Ok(format!("Player {winner} has won!\nPlaying field: \n{game}").into())
-    } else if game.is_full() {
+    } else if game.will_tie() {
         let game = games.swap_remove(index);
         Ok(format!("It's a tie!\nPlaying field: \n{game}").into())
     } else {
@@ -258,6 +258,34 @@ impl TicTacToe {
         } else {
             0
         }
+    }
+
+    pub fn will_tie(&self) -> bool {
+        if self.is_full() {
+            return true;
+        }
+
+        let mut game = self.clone();
+        game.field.iter_mut().for_each(|f| {
+            if *f == 0 {
+                *f = 1;
+            }
+        });
+
+        if game.check_all() != 0 {
+            return false;
+        }
+
+        game.field = self.field;
+        game.field.iter_mut().for_each(|f| {
+            if *f == 0 {
+                *f = 2;
+            }
+        });
+        if game.check_all() != 0 {
+            return false;
+        }
+        true
     }
 
     pub fn is_full(&self) -> bool {
