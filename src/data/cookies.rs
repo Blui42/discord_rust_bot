@@ -37,7 +37,7 @@ impl<'a> Cookies<'a> {
 impl<'a> Drop for Cookies<'a> {
     fn drop(&mut self) {
         if let Ok(file_content) = serde_json::to_string_pretty(&self.data) {
-            if let Err(why) = fs::write(&self.path, file_content) {
+            if let Err(why) = fs::write(self.path, file_content) {
                 eprintln!("Error writing to file: {why}");
             }
         }

@@ -33,7 +33,7 @@ impl<'a> Level<'a> {
     }
 
     pub fn new(path: &'a str) -> Self {
-        let file = fs::read_to_string(&path);
+        let file = fs::read_to_string(path);
         let file_contents: &str = file.as_ref().map_or("{}", |x| x);
         let data: HashMap<_, _> = serde_json::from_str(file_contents).unwrap_or_default();
         Self { data, path }
@@ -49,7 +49,7 @@ impl<'a> Level<'a> {
 impl<'a> Drop for Level<'a> {
     fn drop(&mut self) {
         if let Ok(file_content) = serde_json::to_string_pretty(&self.data) {
-            if let Err(why) = fs::write(&self.path, file_content) {
+            if let Err(why) = fs::write(self.path, file_content) {
                 eprintln!("Error writing to file: {why}");
             }
         }

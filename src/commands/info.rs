@@ -25,7 +25,7 @@ pub async fn id<'a>(
         _ => Ok("Something went wrong".into()),
     }
 }
-pub async fn picture<'a>(options: &'a [CommandDataOption]) -> Result<Cow<'static, str>> {
+pub async fn picture(options: &[CommandDataOption]) -> Result<Cow<'static, str>> {
     let target = options.get(0).and_then(|x| x.resolved.as_ref());
     match target {
         Some(CommandDataOptionValue::User(target, _)) => Ok(target.face().into()),
