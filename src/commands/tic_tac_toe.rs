@@ -127,19 +127,20 @@ pub async fn start_game<'a>(
 
     let data = ctx.data.read().await;
     let queue = data.get::<Queue>().context("get game queue")?;
-    // Without the let it doesn't work for some reason
-    #[allow(clippy::let_and_return)]
-    let result = if let Some(opponent) = find_game(user, opponent, &*queue.read().await).await {
-        queue.write().await.remove(opponent);
+    let games = queue.read().await;
+    if let Some(opponent) = find_game(user, opponent, &games).await {
+        let opponent = opponent.clone();
+        drop(games);
+        queue.write().await.remove(&opponent);
         let mut running_games = data.get::<Running>().context("get running games")?.write().await;
         running_games.push(TicTacToe::new(user.id, opponent.id));
         Ok("Game initiated! Use `/ttt set <1-9>` to play!".into())
     } else if let Some(opp) = opponent {
+        drop(games);
         make_request(opp.clone(), ctx, user).await
     } else {
         Ok("You have no incoming requests".into())
-    };
-    result
+    }
 }
 
 pub async fn mark_field<'a>(
@@ -163,7 +164,7 @@ pub async fn mark_field<'a>(
         .context("Argument `field` was missing or invalid")?;
 
     let player = game.player_number(user.id);
-    let res = game.place(player, field_number);
+    let res = game.place(player, field_number.wrapping_sub(1));
     match res {
         Ok(()) => (),
         Err(PlaceError::NotYourTurn) => return Ok("It's not your turn!".into()),
