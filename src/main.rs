@@ -94,6 +94,7 @@ impl EventHandler for Handler {
         println!("{} is connected!", ready.user.tag());
         let result = if let Some(guild) = ctx.data.read().await.get::<Config>().unwrap().home_server
         {
+            Command::set_global_application_commands(&ctx.http, |x| x).await.ok();
             id::GuildId(guild.into()).set_application_commands(&ctx.http, commands::commands).await
         } else {
             Command::set_global_application_commands(&ctx.http, commands::commands).await
