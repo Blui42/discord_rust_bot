@@ -50,6 +50,19 @@ impl EventHandler for Handler {
         }
     }
 
+    async fn ready(&self, ctx: Context, ready: Ready) {
+        println!("{} is connected!", ready.user.tag());
+        let result = if let Some(guild) = ctx.data.read().await.get::<Config>().unwrap().home_server
+        {
+            Command::set_global_application_commands(&ctx.http, |x| x).await.ok();
+            GuildId(guild.into()).set_application_commands(&ctx.http, commands::commands).await
+        } else {
+            Command::set_global_application_commands(&ctx.http, commands::commands).await
+        };
+        if let Err(err) = result {
+            eprintln!("Failed to register commands. More info:\n {err:#?}");
+        }
+    }
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
         let command = match interaction {
             Interaction::ApplicationCommand(command) => command,
@@ -90,28 +103,15 @@ impl EventHandler for Handler {
             }
         }
     }
-    async fn ready(&self, ctx: Context, ready: Ready) {
-        println!("{} is connected!", ready.user.tag());
-        let result = if let Some(guild) = ctx.data.read().await.get::<Config>().unwrap().home_server
-        {
-            Command::set_global_application_commands(&ctx.http, |x| x).await.ok();
-            id::GuildId(guild.into()).set_application_commands(&ctx.http, commands::commands).await
-        } else {
-            Command::set_global_application_commands(&ctx.http, commands::commands).await
-        };
-        if let Err(err) = result {
-            eprintln!("Failed to register commands. More info:\n {err:#?}");
-        }
-    }
 }
 
 #[tokio::main]
-async fn main() -> Result<(), anyhow::Error> {
+async fn main() -> anyhow::Result<()> {
     dotenv().ok(); // place variables from .env into this enviroment
 
     let token: String = env::var("DISCORD_TOKEN")
         .ok()
-        .context("Put DISCORD_TOKEN=YourTokenHere into the file '.env' or the enviroment")?;
+        .context("Put DISCORD_TOKEN=YourTokenHere into the file '.env' or the environment")?;
 
     let bot_id = if let Some((id, _)) = serenity::utils::parse_token(&token) {
         id
