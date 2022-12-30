@@ -86,7 +86,7 @@ impl EventHandler for Handler {
                         .interaction_response_data(|message| message.content(msg))
                 })
                 .await
-                .unwrap_or_else(|why| eprintln!("An Error occured: {why}")),
+                .unwrap_or_else(|why| eprintln!("An Error occurred: {why}")),
             Err(e) => {
                 eprintln!("------------\n{e:?}\n------------\n{command:?}\n------------");
                 command
@@ -95,11 +95,11 @@ impl EventHandler for Handler {
                             .kind(ChannelMessageWithSource)
                             .interaction_response_data(|message| {
                                 message
-                                .content(format!("An Error occured: {e}\nIf you find a consistent way to cause this error, please report it to my support discord."))
+                                .content(format!("An Error occurred: {e}\nIf you find a consistent way to cause this error, please report it to my support discord."))
                                 .ephemeral(true)
                             })
                     })
-                    .await.unwrap_or_else(|why| eprintln!("An Error occured: {why}"));
+                    .await.unwrap_or_else(|why| eprintln!("An Error occurred: {why}"));
             }
         }
     }
@@ -107,7 +107,7 @@ impl EventHandler for Handler {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    dotenv().ok(); // place variables from .env into this enviroment
+    dotenv().ok(); // place variables from .env into this environment
 
     let token: String = env::var("DISCORD_TOKEN")
         .ok()
