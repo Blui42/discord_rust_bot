@@ -1,4 +1,9 @@
+# Rust compilation target folder
 /target
-.env
-*.json
-config.toml
+
+# User configuration of this project
+/*.json
+/config.toml
+
+# Ignore hidden files and folders
+.*
