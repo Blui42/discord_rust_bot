@@ -1,21 +1,15 @@
 use std::borrow::Cow;
 
 use anyhow::{Context as _, Result};
-use rand::{
-    distributions::{Distribution, Uniform},
-    prelude::*,
-};
 use serenity::model::application::interaction::application_command::CommandDataOption;
 
 fn roll_dice(rolls: u8, sides: u8) -> (u16, u8, u8, Vec<u8>) {
-    let between = Uniform::new_inclusive(1, sides);
-    let mut rng = thread_rng();
     let mut total: u16 = 0;
     let mut summary = Vec::with_capacity(sides.into());
     let mut min: u8 = 0;
     let mut max: u8 = 0;
     for _ in 0..rolls {
-        let number: u8 = between.sample(&mut rng);
+        let number = fastrand::u8(1..=sides);
         total += u16::from(number);
         summary.push(number);
         if number == sides {
@@ -57,7 +51,7 @@ pub async fn coin() -> Result<Cow<'static, str>> {
 
 #[inline]
 pub fn flip_coin() -> &'static str {
-    match thread_rng().gen::<i8>() {
+    match fastrand::i8(..) {
         -128..=-2 => "It landed tails!",
         -1 => "It didn't tip over",
         0 => "It fell under the table",

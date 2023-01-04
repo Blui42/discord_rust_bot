@@ -5,7 +5,6 @@ mod data;
 use anyhow::Context as _;
 use data::{config::Config, Data};
 use dotenv::dotenv;
-use rand::Rng as _;
 use serenity::{
     model::{
         application::{
@@ -37,13 +36,12 @@ impl EventHandler for Handler {
         let author_id = msg.author.id.0;
         if let Some((guild_id, data_lock)) = msg.guild_id.zip(ctx.data.read().await.get::<Data>()) {
             let mut data = data_lock.write().await;
-            let mut rng = rand::thread_rng();
 
             if cookies {
-                data.cookies.give(author_id, rng.gen_range(0..2));
+                data.cookies.give(author_id, fastrand::u64(0..2));
             }
             if levels {
-                let xp = rng.gen_range(0..5);
+                let xp = fastrand::u64(0..5);
                 data.level.add_global_xp(author_id, xp);
                 data.level.add_guild_xp(author_id, guild_id.0, xp);
             }
