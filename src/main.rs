@@ -67,18 +67,7 @@ impl EventHandler for Handler {
             _ => return,
         };
         let options = command.data.options.as_slice();
-        let response = match command.data.name.as_str() {
-            "roll" => commands::fun::roll(options).await,
-            "coin" => commands::fun::coin().await,
-            "id" => commands::info::id(options, command.guild_id.as_ref()).await,
-            "ttt" => commands::tic_tac_toe::command(options, &ctx, &command.user).await,
-            "picture" => commands::info::picture(options).await,
-            "delete" => commands::admin::delete(options, command.channel_id, &ctx).await,
-            "rockpaperscissors" => {
-                commands::rock_paper_scissors::command(options, &ctx, &command.user).await
-            }
-            x => Err(anyhow::anyhow!("Unknown Command: {x}")),
-        };
+        let response = commands::respond_to(&ctx, &command, options).await;
         match response {
             Ok(msg) => command
                 .create_interaction_response(&ctx.http, |response| {
@@ -105,6 +94,8 @@ impl EventHandler for Handler {
         }
     }
 }
+
+impl Handler {}
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

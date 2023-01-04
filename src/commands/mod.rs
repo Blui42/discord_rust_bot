@@ -6,11 +6,31 @@ pub mod level_cookies;
 pub mod rock_paper_scissors;
 pub mod tic_tac_toe;
 
+use serenity::model::application::interaction::application_command::CommandDataOption;
+use serenity::model::prelude::interaction::application_command::ApplicationCommandInteraction;
 use serenity::{
     builder::CreateApplicationCommands,
     model::{application::command::CommandOptionType, Permissions},
+    prelude::*,
 };
+use std::borrow::Cow;
 
+pub async fn respond_to<'a>(
+    ctx: &Context,
+    command: &ApplicationCommandInteraction,
+    options: &'a [CommandDataOption],
+) -> anyhow::Result<Cow<'a, str>> {
+    match command.data.name.as_str() {
+        "roll" => fun::roll(options).await,
+        "coin" => fun::coin().await,
+        "id" => info::id(options, command.guild_id.as_ref()).await,
+        "ttt" => tic_tac_toe::command(options, ctx, &command.user).await,
+        "picture" => info::picture(options).await,
+        "delete" => admin::delete(options, command.channel_id, ctx).await,
+        "rockpaperscissors" => rock_paper_scissors::command(options, ctx, &command.user).await,
+        x => Err(anyhow::anyhow!("Unknown Command: {x}")),
+    }
+}
 #[allow(clippy::too_many_lines)]
 #[rustfmt::skip]
 pub fn commands(commands: &mut CreateApplicationCommands) -> &mut CreateApplicationCommands {
