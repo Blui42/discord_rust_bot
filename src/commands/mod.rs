@@ -3,6 +3,7 @@ pub mod admin;
 pub mod fun;
 pub mod info;
 pub mod level_cookies;
+pub mod rock_paper_scissors;
 pub mod tic_tac_toe;
 
 use serenity::{
@@ -145,5 +146,28 @@ pub fn commands(commands: &mut CreateApplicationCommands) -> &mut CreateApplicat
                         .required(true)
                 })
                 .default_member_permissions(Permissions::MANAGE_MESSAGES)
+        })
+        .create_application_command(|command| {
+            command
+                .name("rockpaperscissors")
+                .name_localized("de", "scheresteinpapier")
+                .description("Rock-Paper-Scissors!")
+                .description_localized("de", "Schere-Stein-Papier!")
+                .create_option(|option| {
+                    option
+                        .name("opponent")
+                        .name_localized("de", "gegner")
+                        .description("Who to play against")
+                        .kind(CommandOptionType::User)
+                })
+                .create_option(|option| {
+                    option
+                        .name("thing")
+                        .description("The thing you want to play")
+                        .kind(CommandOptionType::String)
+                        .add_string_choice_localized("Rock", "rock", [("de", "Stein")])
+                        .add_string_choice_localized("Paper", "paper", [("de", "Papier")])
+                        .add_string_choice_localized("Scissors", "scissors", [("de", "Schere")])
+                })
         })
 }

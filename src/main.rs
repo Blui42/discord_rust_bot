@@ -74,6 +74,9 @@ impl EventHandler for Handler {
             "ttt" => commands::tic_tac_toe::command(options, &ctx, &command.user).await,
             "picture" => commands::info::picture(options).await,
             "delete" => commands::admin::delete(options, command.channel_id, &ctx).await,
+            "rockpaperscissors" => {
+                commands::rock_paper_scissors::command(options, &ctx, &command.user).await
+            }
             x => Err(anyhow::anyhow!("Unknown Command: {x}")),
         };
         match response {
@@ -143,6 +146,8 @@ async fn main() -> anyhow::Result<()> {
         let mut client_data = client.data.write().await;
         client_data.insert::<Data>(Arc::new(RwLock::new(Data::new())));
         client_data.insert::<Config>(config);
+
+        client_data.insert::<commands::rock_paper_scissors::RpsQueue>(Arc::default());
 
         client_data.insert::<commands::tic_tac_toe::Running>(RwLock::new(Vec::new()));
         client_data.insert::<commands::tic_tac_toe::Queue>(RwLock::new(HashMap::new()));
