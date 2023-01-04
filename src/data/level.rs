@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::fs;
 
 pub struct Level<'a> {
-    data: HashMap<String, HashMap<String, XPCounter>>,
+    data: HashMap<u64, HashMap<u64, XPCounter>>,
     path: &'a str,
 }
 
@@ -11,20 +11,17 @@ impl<'a> Level<'a> {
     // Might get relevant later in development
     #[allow(dead_code)]
     pub fn get(&self, user: u64, guild: u64) -> Option<XPCounter> {
-        self.data.get(&guild.to_string())?.get(&user.to_string()).cloned()
+        self.data.get(&guild)?.get(&user).cloned()
     }
     #[allow(dead_code)]
     pub fn set(&mut self, user: u64, guild: u64, to: XPCounter) {
-        self.data
-            .entry(guild.to_string())
-            .or_insert_with(HashMap::new)
-            .insert(user.to_string(), to);
+        self.data.entry(guild).or_insert_with(HashMap::new).insert(user, to);
     }
     pub fn add_guild_xp(&mut self, user: u64, guild: u64, xp: u64) {
         self.data
-            .entry(guild.to_string())
+            .entry(guild)
             .or_insert_with(HashMap::new)
-            .entry(user.to_string())
+            .entry(user)
             .and_modify(|old_xp| old_xp.add_xp(xp))
             .or_insert_with(|| XPCounter::new_with_xp(xp));
     }

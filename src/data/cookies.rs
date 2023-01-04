@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::fs;
 
 pub struct Cookies<'a> {
-    data: HashMap<String, u64>,
+    data: HashMap<u64, u64>,
     path: &'a str,
 }
 
@@ -10,14 +10,14 @@ impl<'a> Cookies<'a> {
     // Might get relevant later in development
     #[allow(dead_code)]
     pub fn get(&self, user: u64) -> Option<u64> {
-        self.data.get(&user.to_string()).copied()
+        self.data.get(&user).copied()
     }
     #[allow(dead_code)]
     pub fn set(&mut self, user: u64, cookies: u64) {
-        self.data.insert(user.to_string(), cookies);
+        self.data.insert(user, cookies);
     }
     pub fn give(&mut self, user: u64, cookies: u64) {
-        self.data.entry(user.to_string()).and_modify(|x| *x += cookies).or_default();
+        self.data.entry(user).and_modify(|x| *x += cookies).or_default();
     }
 
     pub fn new(path: &'a str) -> Self {
