@@ -49,7 +49,7 @@ pub async fn make_request(opponent: User, ctx: &Context, user: &User) -> Result<
     let opponent_mentioned = opponent.mention();
     match game_queue.insert(user.clone(), opponent) {
         Some(previous_opponent) => Ok(format!(
-            "Ypu cancelled your game against {} and challenged {opponent_mentioned}",
+            "You cancelled your game against {} and challenged {opponent_mentioned}",
             previous_opponent.tag()
         )
         .into()),
