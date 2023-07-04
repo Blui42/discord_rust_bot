@@ -62,9 +62,8 @@ impl EventHandler for Handler {
         }
     }
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
-        let command = match interaction {
-            Interaction::ApplicationCommand(command) => command,
-            _ => return,
+        let  Interaction::ApplicationCommand(command) = interaction else {
+            return
         };
         let options = command.data.options.as_slice();
         let response = commands::respond_to(&ctx, &command, options).await;
@@ -105,9 +104,7 @@ async fn main() -> anyhow::Result<()> {
         .ok()
         .context("Put DISCORD_TOKEN=YourTokenHere into the file '.env' or the environment")?;
 
-    let bot_id = if let Some((id, _)) = serenity::utils::parse_token(&token) {
-        id
-    } else {
+    let Some((bot_id, _)) = serenity::utils::parse_token(&token) else {
         anyhow::bail!("DISCORD_TOKEN is invalid");
     };
 

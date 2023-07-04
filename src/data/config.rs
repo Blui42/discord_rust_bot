@@ -19,8 +19,8 @@ pub struct Config {
 }
 impl Config {
     pub fn from_file(path: &str) -> Option<Self> {
-        let file_content = fs::read(path).ok()?;
-        return toml::from_slice::<Self>(file_content.as_slice()).ok();
+        let file_content = fs::read_to_string(path).ok()?;
+        toml::from_str::<Self>(&file_content).ok()
     }
 }
 

@@ -53,7 +53,7 @@ pub async fn make_request(opponent: User, ctx: &Context, user: &User) -> Result<
             previous_opponent.tag()
         )
         .into()),
-        None => Ok(format!("You challenged {}!", opponent_mentioned).into()),
+        None => Ok(format!("You challenged {opponent_mentioned}!").into()),
     }
 }
 
@@ -180,7 +180,7 @@ pub async fn mark_field<'a>(
         let game = games.swap_remove(index);
         Ok(format!("It's a tie!\nPlaying field: \n{game}").into())
     } else {
-        Ok(format!("{:#}", game).into())
+        Ok(format!("{game:#}").into())
     }
 }
 

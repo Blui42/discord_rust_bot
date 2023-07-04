@@ -28,7 +28,7 @@ pub async fn command<'a>(
     let Some(Value::String(play)) = options.get(1).and_then(|x| x.value.as_ref()) else {
         bail!("No option arg.");
     };
-    let Ok(play) = play.parse::<RPS>() else {
+    let Ok(play) = play.parse::<Rps>() else {
         bail!("Invalid input string");
     };
     let mutex = ctx.data.read().await.get::<RpsQueue>().unwrap().clone();
@@ -45,13 +45,13 @@ pub async fn command<'a>(
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum RPS {
+pub enum Rps {
     Rock,
     Paper,
     Scissors,
 }
 
-impl RPS {
+impl Rps {
     pub fn match_against(self, other: Self) -> &'static str {
         if self == other {
             "It's a tie!"
@@ -63,7 +63,7 @@ impl RPS {
     }
 }
 
-impl std::ops::Shr<()> for RPS {
+impl std::ops::Shr<()> for Rps {
     type Output = Self;
 
     fn shr(self, _: ()) -> Self::Output {
@@ -75,7 +75,7 @@ impl std::ops::Shr<()> for RPS {
     }
 }
 
-impl std::ops::Shl<()> for RPS {
+impl std::ops::Shl<()> for Rps {
     type Output = Self;
 
     fn shl(self, _: ()) -> Self::Output {
@@ -87,7 +87,7 @@ impl std::ops::Shl<()> for RPS {
     }
 }
 
-impl FromStr for RPS {
+impl FromStr for Rps {
     type Err = ();
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
@@ -101,5 +101,5 @@ impl FromStr for RPS {
 pub struct RpsQueue;
 
 impl TypeMapKey for RpsQueue {
-    type Value = Arc<Mutex<HashMap<(UserId, UserId), (RPS, Instant)>>>;
+    type Value = Arc<Mutex<HashMap<(UserId, UserId), (Rps, Instant)>>>;
 }
