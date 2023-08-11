@@ -43,7 +43,7 @@ impl EventHandler for Handler {
             if levels {
                 let xp = fastrand::u64(0..5);
                 data.level.add_global_xp(author_id, xp);
-                data.level.add_guild_xp(author_id, guild_id.0, xp);
+                data.level.add_guild_xp(guild_id.0, author_id, xp);
             }
         }
     }

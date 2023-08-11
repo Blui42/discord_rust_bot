@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::fs;
+use std::{fs, ops};
 
 pub struct Level<'a> {
     data: HashMap<u64, HashMap<u64, XPCounter>>,
@@ -10,17 +10,19 @@ pub struct Level<'a> {
 impl<'a> Level<'a> {
     // Might get relevant later in development
     #[allow(dead_code)]
-    pub fn get(&self, user: u64, guild: u64) -> Option<XPCounter> {
-        self.data.get(&guild)?.get(&user).cloned()
+    pub fn get(&self, guild: u64, user: u64) -> Option<&XPCounter> {
+        self.data.get(&guild)?.get(&user)
     }
     #[allow(dead_code)]
-    pub fn set(&mut self, user: u64, guild: u64, to: XPCounter) {
-        self.data.entry(guild).or_insert_with(HashMap::new).insert(user, to);
+    pub fn get_mut(&mut self, guild: u64, user: u64) -> Option<&mut XPCounter> {
+        self.data.get_mut(&guild)?.get_mut(&user)
     }
-    pub fn add_guild_xp(&mut self, user: u64, guild: u64, xp: u64) {
-        self.data
-            .entry(guild)
-            .or_insert_with(HashMap::new)
+    #[allow(dead_code)]
+    pub fn set(&mut self, guild: u64, user: u64, to: XPCounter) {
+        self.guild(guild).insert(user, to);
+    }
+    pub fn add_guild_xp(&mut self, guild: u64, user: u64, xp: u64) {
+        self.guild(guild)
             .entry(user)
             .and_modify(|old_xp| old_xp.add_xp(xp))
             .or_insert_with(|| XPCounter::new_with_xp(xp));
@@ -28,7 +30,9 @@ impl<'a> Level<'a> {
     pub fn add_global_xp(&mut self, user: u64, xp: u64) {
         self.add_guild_xp(user, 0, xp);
     }
-
+    pub fn guild(&mut self, guild: u64) -> &mut HashMap<u64, XPCounter> {
+        self.data.entry(guild).or_insert_with(HashMap::new)
+    }
     pub fn new(path: &'a str) -> Self {
         let file = fs::read_to_string(path);
         let file_contents: &str = file.as_ref().map_or("{}", |x| x);
@@ -53,7 +57,7 @@ impl<'a> Drop for Level<'a> {
     }
 }
 
-#[derive(Deserialize, Serialize, Debug, Clone)]
+#[derive(Deserialize, Serialize, Debug, Clone, Copy)]
 pub struct XPCounter {
     pub level: u64,
     pub xp: u64,
@@ -76,12 +80,14 @@ impl XPCounter {
     }
 
     pub fn level_up(&mut self) {
-        let mut xp_target = self.level * 10;
-        while self.xp > xp_target {
-            self.xp -= xp_target;
+        while self.xp >= self.target() {
+            self.xp -= self.target();
             self.level += 1;
-            xp_target += 10;
         }
+    }
+    /// The amount of XP needed for the next level-up
+    pub fn target(&self) -> u64 {
+        self.level * 10
     }
 }
 
