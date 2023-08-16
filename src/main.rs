@@ -16,7 +16,7 @@ use serenity::{
     prelude::*,
 };
 use std::env;
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 use tokio::time::{sleep, Duration};
 struct Handler;
 
@@ -131,14 +131,16 @@ async fn main() -> anyhow::Result<()> {
     }
 
     {
+        use commands::{rock_paper_scissors, tic_tac_toe};
+
         let mut client_data = client.data.write().await;
-        client_data.insert::<Data>(Arc::new(RwLock::new(Data::new())));
+        client_data.insert::<Data>(Arc::default());
         client_data.insert::<Config>(config);
 
-        client_data.insert::<commands::rock_paper_scissors::RpsQueue>(Arc::default());
+        client_data.insert::<rock_paper_scissors::Queue>(Arc::default());
 
-        client_data.insert::<commands::tic_tac_toe::Running>(RwLock::new(Vec::new()));
-        client_data.insert::<commands::tic_tac_toe::Queue>(RwLock::new(HashMap::new()));
+        client_data.insert::<tic_tac_toe::Running>(RwLock::default());
+        client_data.insert::<tic_tac_toe::Queue>(RwLock::default());
     }
 
     let shard_manager = client.shard_manager.clone();

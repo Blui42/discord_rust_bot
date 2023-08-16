@@ -12,8 +12,8 @@ pub struct Data<'l, 'c> {
     pub level: Level<'l>,
     pub cookies: Cookies<'c>,
 }
-impl Data<'static, 'static> {
-    pub fn new() -> Self {
+impl Default for Data<'static, 'static> {
+    fn default() -> Self {
         Self { level: Level::new("level.json"), cookies: Cookies::new("cookies.json") }
     }
 }

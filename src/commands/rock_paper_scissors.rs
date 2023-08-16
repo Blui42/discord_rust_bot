@@ -31,7 +31,7 @@ pub async fn command<'a>(
     let Ok(play) = play.parse::<Rps>() else {
         bail!("Invalid input string");
     };
-    let mutex = ctx.data.read().await.get::<RpsQueue>().unwrap().clone();
+    let mutex = ctx.data.read().await.get::<Queue>().unwrap().clone();
     let mut queue = mutex.lock().await;
     if let Some((a, timestamp)) = queue.remove(&(user.id, opponent.id)) {
         let duration_ms = Instant::now().duration_since(timestamp).as_millis();
@@ -98,8 +98,8 @@ impl FromStr for Rps {
         }
     }
 }
-pub struct RpsQueue;
+pub struct Queue;
 
-impl TypeMapKey for RpsQueue {
+impl TypeMapKey for Queue {
     type Value = Arc<Mutex<HashMap<(UserId, UserId), (Rps, Instant)>>>;
 }
