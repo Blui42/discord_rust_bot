@@ -39,7 +39,8 @@ pub async fn command<'a>(
         let duration_ms = Instant::now().duration_since(timestamp).as_millis();
         if duration_ms < 5000 {
             let result = play.match_against(a);
-            return Ok(format!("{result}\nIt took you {duration_ms}ms to respond.").into());
+            // 202f: thin non-breaking whitespace
+            return Ok(format!("{result}\nIt took you {duration_ms}\u{202f}ms to respond.").into());
         }
     }
     queue.insert((opponent.id, user.id), (play, Instant::now()));
