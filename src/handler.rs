@@ -56,30 +56,19 @@ impl EventHandler for Handler {
     }
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
         let Interaction::Command(command) = interaction else { return };
-        let response = commands::respond_to(&ctx, &command).await;
-        match response {
-            Ok(msg) => command
-                .create_response(
-                    &ctx.http,
-                    CreateInteractionResponse::Message(
-                        CreateInteractionResponseMessage::new().content(msg),
-                    ),
-                )
-                .await
-                .unwrap_or_else(|why| eprintln!("An Error occurred: {why}")),
+        let response = match commands::respond_to(&ctx, &command).await {
+            Ok(msg) => CreateInteractionResponseMessage::new().content(msg),
             Err(e) => {
                 eprintln!("------------\n{e:?}\n------------\n{command:?}\n------------");
-                command
-                    .create_response(
-                        &ctx.http,
-                        CreateInteractionResponse::Message(
-                            CreateInteractionResponseMessage::new().content(format!("An Error occurred: {e}\nIf you find a consistent way to cause this error, please report it to my support discord.")).ephemeral(true),
-                        ),
-                    )
-                    .await
-                    .unwrap_or_else(|why| eprintln!("An Error occurred: {why}"));
+                CreateInteractionResponseMessage::new().content(
+                format!("An Error occurred: {e}\n\
+                If you find a consistent way to cause this error, please report it to my support discord.")).ephemeral(true)
             }
-        }
+        };
+        command
+            .create_response(&ctx.http, CreateInteractionResponse::Message(response))
+            .await
+            .unwrap_or_else(|why| eprintln!("An Error occurred: {why}"));
     }
 }
 
