@@ -39,20 +39,8 @@ pub async fn respond_to<'a>(
 pub fn commands() -> Vec<CreateCommand> {
     #[allow(clippy::enum_glob_use)]
     use CommandOptionType::*;
-    fn option(
-        kind: CommandOptionType,
-        name: impl Into<std::string::String>,
-        description: impl Into<std::string::String>,
-    ) -> CreateCommandOption {
-        CreateCommandOption::new(kind, name, description)
-    }
-    fn required_option(
-        kind: CommandOptionType,
-        name: impl Into<std::string::String>,
-        description: impl Into<std::string::String>,
-    ) -> CreateCommandOption {
-        CreateCommandOption::new(kind, name, description).required(true)
-    }
+    let option = CreateCommandOption::new;
+    let required_option = |kind, name, description| option(kind, name, description).required(true);
     vec![
         CreateCommand::new("id")
             .description("Get the ID of the mentioned user/role/channel")
