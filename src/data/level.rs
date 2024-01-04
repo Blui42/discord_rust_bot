@@ -31,7 +31,7 @@ impl<'a> Level<'a> {
         self.add_guild_xp(user, 0, xp);
     }
     pub fn guild(&mut self, guild: u64) -> &mut HashMap<u64, XPCounter> {
-        self.data.entry(guild).or_insert_with(HashMap::new)
+        self.data.entry(guild).or_default()
     }
     pub fn new(path: &'a str) -> Self {
         let file = fs::read_to_string(path);

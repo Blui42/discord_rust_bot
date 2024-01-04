@@ -18,7 +18,9 @@ pub async fn command<'a>(
     ctx: &Context,
     user: &User,
 ) -> Result<Cow<'a, str>> {
-    let Some(CommandDataOptionValue::User(opponent, _)) = options.get(0).and_then(|x| x.resolved.as_ref()) else {
+    let Some(CommandDataOptionValue::User(opponent, _)) =
+        options.get(0).and_then(|x| x.resolved.as_ref())
+    else {
         bail!("No user arg.");
     };
     if opponent == user {
@@ -66,7 +68,7 @@ impl Rps {
 impl std::ops::Shr<()> for Rps {
     type Output = Self;
 
-    fn shr(self, _: ()) -> Self::Output {
+    fn shr(self, (): ()) -> Self::Output {
         match self {
             Self::Rock => Self::Paper,
             Self::Paper => Self::Scissors,
@@ -78,7 +80,7 @@ impl std::ops::Shr<()> for Rps {
 impl std::ops::Shl<()> for Rps {
     type Output = Self;
 
-    fn shl(self, _: ()) -> Self::Output {
+    fn shl(self, (): ()) -> Self::Output {
         match self {
             Self::Rock => Self::Scissors,
             Self::Scissors => Self::Paper,

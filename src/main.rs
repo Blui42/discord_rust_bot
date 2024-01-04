@@ -62,9 +62,7 @@ impl EventHandler for Handler {
         }
     }
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
-        let  Interaction::ApplicationCommand(command) = interaction else {
-            return
-        };
+        let Interaction::ApplicationCommand(command) = interaction else { return };
         let options = command.data.options.as_slice();
         let response = commands::respond_to(&ctx, &command, options).await;
         match response {
