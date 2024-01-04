@@ -6,188 +6,107 @@ pub mod level_cookies;
 pub mod rock_paper_scissors;
 pub mod tic_tac_toe;
 
-use serenity::model::application::interaction::application_command::CommandDataOption;
-use serenity::model::prelude::interaction::application_command::ApplicationCommandInteraction;
+use serenity::builder::{CreateCommand, CreateCommandOption};
 use serenity::{
-    builder::CreateApplicationCommands,
-    model::{application::command::CommandOptionType, Permissions},
-    prelude::*,
+    client::Context,
+    model::{
+        application::{CommandInteraction, CommandOptionType},
+        Permissions,
+    },
 };
 use std::borrow::Cow;
 
 pub async fn respond_to<'a>(
     ctx: &Context,
-    command: &ApplicationCommandInteraction,
-    options: &'a [CommandDataOption],
+    command: &'a CommandInteraction,
 ) -> anyhow::Result<Cow<'a, str>> {
+    let options = command.data.options.as_slice();
+    let resolved_options_vec = &command.data.options();
+    let resolved_options = resolved_options_vec.as_slice();
     match command.data.name.as_str() {
         "roll" => fun::roll(options).await,
         "coin" => fun::coin().await,
         "id" => info::id(options, command.guild_id.as_ref()).await,
-        "ttt" => tic_tac_toe::command(options, ctx, &command.user).await,
-        "picture" => info::picture(options).await,
+        "ttt" => tic_tac_toe::command(resolved_options, ctx, &command.user).await,
+        "picture" => info::picture(resolved_options).await,
         "delete" => admin::delete(options, command.channel_id, ctx).await,
-        "rockpaperscissors" => rock_paper_scissors::command(options, ctx, &command.user).await,
+        "rockpaperscissors" => {
+            rock_paper_scissors::command(resolved_options, ctx, &command.user).await
+        }
         x => Err(anyhow::anyhow!("Unknown Command: {x}")),
     }
 }
-#[allow(clippy::too_many_lines)]
-#[rustfmt::skip]
-pub fn commands(commands: &mut CreateApplicationCommands) -> &mut CreateApplicationCommands {
-    commands
-        .create_application_command(|command| {
-            command
-                .name("id")
-                .description("Get the ID of the mentioned user/role/channel")
-                .create_option(|option| {
-                    option
-                        .name("server")
-                        .description("Get ID of the server you're on")
-                        .kind(CommandOptionType::SubCommand)
-                })
-                .create_option(|option| {
-                    option
-                        .name("user")
-                        .description("Get ID of a user or role")
-                        .kind(CommandOptionType::SubCommand)
-                        .create_sub_option(|sub_option| {
-                            sub_option
-                                .name("target")
-                                .description("The user or role to get the ID of")
-                                .kind(CommandOptionType::Mentionable)
-                                .required(true)
-                        })
-                })
-                .create_option(|option| {
-                    option
-                        .name("channel")
-                        .description("Get the user of a Channel")
-                        .kind(CommandOptionType::SubCommand)
-                        .create_sub_option(|sub_option| {
-                            sub_option
-                                .name("target")
-                                .description("The Channel to get the ID of")
-                                .kind(CommandOptionType::Channel)
-                                .required(true)
-                        })
-                })
-        })
-        .create_application_command(|command| {
-            command
-                .name("picture")
-                .description("Get a user's profile picture")
-                .create_option(|option| {
-                    option
-                        .name("target")
-                        .description("The User to get the profile picture of")
-                        .kind(CommandOptionType::User)
-                        .required(true)
-                })
-        })
-        .create_application_command(|command| {
-            command
-                .name("roll")
-                .description("Rolls dice")
-                .create_option(|option| {
-                    option
-                        .name("rolls")
-                        .description("The amount of dice to roll")
-                        .kind(CommandOptionType::Integer)
-                        .min_int_value(0)
-                        .max_int_value(255)
-                        .required(true)
-                })
-                .create_option(|option| {
-                    option
-                        .name("sides")
-                        .description("the amount of sides the thrown dice have")
-                        .kind(CommandOptionType::Integer)
-                        .min_int_value(0)
-                        .max_int_value(255)
-                        .required(true)
-                })
-        })
-        .create_application_command(|command| command.name("coin").description("Toss a coin"))
-        .create_application_command(|command| {
-            command
-                .name("ttt")
-                .description("Tic Tac Toe")
-                .create_option(|option| {
-                    option
-                        .name("start")
-                        .description("Start a new game")
-                        .kind(CommandOptionType::SubCommand)
-                        .create_sub_option(|sub_option| {
-                            sub_option
-                                .name("opponent")
-                                .description("Your Opponent")
-                                .kind(CommandOptionType::User)
-                        })
-                })
-                .create_option(|option| {
-                    option
-                        .name("set")
-                        .description("Set your marker on the playing field")
-                        .kind(CommandOptionType::SubCommand)
-                        .create_sub_option(|sub_option| {
-                            sub_option
-                                .name("field")
-                                .description("The field is numbered horizontally")
-                                .kind(CommandOptionType::Integer)
-                                .min_int_value(1)
-                                .max_int_value(9)
-                                .required(true)
-                        })
-                })
-                .create_option(|option| {
-                    option
-                        .name("cancel")
-                        .description("Cancel a upcoming or ongoing game")
-                        .kind(CommandOptionType::SubCommand)
-                        .create_sub_option(|sub_option| {
-                            sub_option
-                                .name("opponent")
-                                .description("The opponent of the game you want to cancel")
-                                .kind(CommandOptionType::User)
-                        })
-                })
-        })
-        .create_application_command(|command| {
-            command
-                .name("delete")
-                .description("Delete some messages")
-                .create_option(|option| {
-                    option
-                        .name("count")
-                        .description("The amount of messages to delete")
-                        .kind(CommandOptionType::Integer)
-                        .min_int_value(1)
-                        .max_int_value(100)
-                        .required(true)
-                })
-                .default_member_permissions(Permissions::MANAGE_MESSAGES)
-        })
-        .create_application_command(|command| {
-            command
-                .name("rockpaperscissors")
-                .name_localized("de", "scheresteinpapier")
-                .description("Rock-Paper-Scissors!")
-                .description_localized("de", "Schere-Stein-Papier!")
-                .create_option(|option| {
-                    option
-                        .name("opponent")
-                        .name_localized("de", "gegner")
-                        .description("Who to play against")
-                        .kind(CommandOptionType::User)
-                })
-                .create_option(|option| {
-                    option
-                        .name("thing")
-                        .description("The thing you want to play")
-                        .kind(CommandOptionType::String)
-                        .add_string_choice_localized("Rock", "rock", [("de", "Stein")])
-                        .add_string_choice_localized("Paper", "paper", [("de", "Papier")])
-                        .add_string_choice_localized("Scissors", "scissors", [("de", "Schere")])
-                })
-        })
+pub fn commands() -> Vec<CreateCommand> {
+    #[allow(clippy::enum_glob_use)]
+    use CommandOptionType::*;
+    fn option(
+        kind: CommandOptionType,
+        name: impl Into<std::string::String>,
+        description: impl Into<std::string::String>,
+    ) -> CreateCommandOption {
+        CreateCommandOption::new(kind, name, description)
+    }
+    fn required_option(
+        kind: CommandOptionType,
+        name: impl Into<std::string::String>,
+        description: impl Into<std::string::String>,
+    ) -> CreateCommandOption {
+        CreateCommandOption::new(kind, name, description).required(true)
+    }
+    vec![
+        CreateCommand::new("id")
+            .description("Get the ID of the mentioned user/role/channel")
+            .set_options(vec![
+                option(SubCommand, "server", "Get ID of the server you're on"),
+                option(SubCommand, "user", "Get ID of a user or role").add_sub_option(
+                    required_option(Mentionable, "target", "The user or role to get the ID of"),
+                ),
+                option(SubCommand, "channel", "Get the ID of a Channel").add_sub_option(
+                    required_option(Channel, "target", "The Channel to get the ID of"),
+                ),
+            ]),
+        CreateCommand::new("picture")
+            .description("Get a user's profile picture")
+            .add_option(required_option(User, "target", "The User to get the profile picture of")),
+        CreateCommand::new("roll").description("Roll the dice").set_options(vec![
+            required_option(Integer, "rolls", "The amount of dice to roll")
+                .min_int_value(0)
+                .max_int_value(255),
+            required_option(Integer, "sides", "the number of sides the dice have")
+                .min_int_value(0)
+                .max_int_value(255),
+        ]),
+        CreateCommand::new("coin").description("Toss a coin"),
+        CreateCommand::new("ttt").description("Tic Tac Toe").set_options(vec![
+            option(SubCommand, "start", "Start a new game of Tic Tac Toe"),
+            option(SubCommand, "set", "Set your marker on the playing field").add_sub_option(
+                required_option(Integer, "field", "The field is numbered horizontally")
+                    .min_int_value(1)
+                    .max_int_value(9),
+            ),
+            option(SubCommand, "cancel", "Cancel an upcoming or ongoing game").add_sub_option(
+                option(User, "opponent", "The opponent of the game you want to cancel"),
+            ),
+        ]),
+        CreateCommand::new("delete")
+            .description("Delete some Messages")
+            .default_member_permissions(Permissions::MANAGE_MESSAGES)
+            .add_option(
+                required_option(Integer, "count", "The amount of messages to delete")
+                    .min_int_value(1)
+                    .max_int_value(100),
+            ),
+        CreateCommand::new("rockpaperscissors")
+            .name_localized("de", "scheresteinpapier")
+            .description("Rock-Paper-Scissors!")
+            .description_localized("de", "Schere-Stein-Papier!")
+            .set_options(vec![
+                required_option(User, "opponent", "Who to play against")
+                    .name_localized("de", "gegner"),
+                required_option(String, "thing", "The thing you want to play")
+                    .add_string_choice_localized("Rock", "rock", [("de", "Stein")])
+                    .add_string_choice_localized("Paper", "paper", [("de", "Papier")])
+                    .add_string_choice_localized("Scissors", "scissors", [("de", "Schere")]),
+            ]),
+    ]
 }

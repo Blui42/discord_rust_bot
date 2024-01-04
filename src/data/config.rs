@@ -7,8 +7,6 @@ extern crate toml;
 #[derive(Deserialize, Debug)]
 pub struct Config {
     #[serde(default)]
-    pub application_id: Option<NonZeroU64>,
-    #[serde(default)]
     pub home_server: Option<NonZeroU64>,
     #[serde(default)]
     pub owners: Vec<u64>,
@@ -30,12 +28,6 @@ impl serenity::prelude::TypeMapKey for Config {
 
 impl Default for Config {
     fn default() -> Self {
-        Self {
-            application_id: None,
-            home_server: None,
-            owners: Vec::new(),
-            cookies: true,
-            levels: true,
-        }
+        Self { home_server: None, owners: Vec::new(), cookies: true, levels: true }
     }
 }

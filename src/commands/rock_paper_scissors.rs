@@ -1,33 +1,29 @@
 use anyhow::{bail, Result};
-use serde_json::Value;
 use serenity::{
+    client::Context,
     model::{
-        application::interaction::application_command::{
-            CommandDataOption, CommandDataOptionValue,
-        },
+        application::{ResolvedOption, ResolvedValue},
         id::UserId,
-        prelude::*,
+        user::User,
     },
-    prelude::*,
+    prelude::TypeMapKey,
 };
 use std::{borrow::Cow, collections::HashMap, str::FromStr, sync::Arc};
-use tokio::time::Instant;
+use tokio::{sync::Mutex, time::Instant};
 
 pub async fn command<'a>(
-    options: &'a [CommandDataOption],
+    options: &'a [ResolvedOption<'_>],
     ctx: &Context,
     user: &User,
-) -> Result<Cow<'a, str>> {
-    let Some(CommandDataOptionValue::User(opponent, _)) =
-        options.get(0).and_then(|x| x.resolved.as_ref())
-    else {
+) -> Result<Cow<'static, str>> {
+    let Some(ResolvedValue::User(opponent, _)) = options.get(0).map(|x| &x.value) else {
         bail!("No user arg.");
     };
-    if opponent == user {
+    if *opponent == user {
         return Ok("You can't play against yourself".into());
     }
 
-    let Some(Value::String(play)) = options.get(1).and_then(|x| x.value.as_ref()) else {
+    let Some(ResolvedValue::String(play)) = options.get(1).map(|x| &x.value) else {
         bail!("No option arg.");
     };
     let Ok(play) = play.parse::<Rps>() else {

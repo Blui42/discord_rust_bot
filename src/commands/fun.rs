@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 use anyhow::{Context as _, Result};
-use serenity::model::application::interaction::application_command::CommandDataOption;
+use serenity::model::application::CommandDataOption;
 
 fn roll_dice(rolls: u8, sides: u8) -> (u16, u8, u8, Vec<u8>) {
     let mut total: u16 = 0;
@@ -24,15 +24,13 @@ fn roll_dice(rolls: u8, sides: u8) -> (u16, u8, u8, Vec<u8>) {
 pub async fn roll(options: &[CommandDataOption]) -> Result<Cow<'_, str>> {
     let rolls: u8 = options
         .get(0)
-        .and_then(|arg| arg.value.as_ref())
-        .and_then(serde_json::Value::as_u64)
-        .and_then(|x| TryFrom::try_from(x).ok())
+        .and_then(|arg| arg.value.as_i64())
+        .and_then(|x| u8::try_from(x).ok())
         .context("Missing rolls argument")?;
     let sides: u8 = options
         .get(1)
-        .and_then(|arg| arg.value.as_ref())
-        .and_then(serde_json::Value::as_u64)
-        .and_then(|x| TryFrom::try_from(x).ok())
+        .and_then(|arg| arg.value.as_i64())
+        .and_then(|x| u8::try_from(x).ok())
         .context("Missing sides argument")?;
     if rolls == 0 {
         Ok("Rolled no dice. (What did you expect?)".into())

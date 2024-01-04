@@ -1,8 +1,8 @@
 use std::borrow::Cow;
 
-use anyhow::{Context as _, Result};
+use anyhow::{bail, Context as _, Result};
 use serenity::model::{
-    application::interaction::application_command::{CommandDataOption, CommandDataOptionValue},
+    application::{CommandDataOption, CommandDataOptionValue, ResolvedOption, ResolvedValue},
     id::GuildId,
 };
 
@@ -11,24 +11,25 @@ pub async fn id<'a>(
     guild_id: Option<&GuildId>,
 ) -> Result<Cow<'a, str>> {
     let subcommand = options.get(0).context("Missing Subcommand")?;
+    let CommandDataOptionValue::SubCommand(subcommand_options) = &subcommand.value else {
+        bail!("Missing Subcommand Arguments")
+    };
     match subcommand.name.as_str() {
-        "user" | "channel" => subcommand
-            .options
+        "user" | "channel" => subcommand_options
             .get(0)
-            .and_then(|arg| arg.value.as_ref())
-            .and_then(serde_json::Value::as_str)
+            .and_then(|arg| arg.value.as_str())
             .map(Into::into)
             .ok_or_else(|| anyhow::anyhow!("Missing Argument (API out of sync?)")),
         "server" => guild_id.map_or(Ok("This can only be used on servers".into()), |id| {
-            Ok(id.0.to_string().into())
+            Ok(id.get().to_string().into())
         }),
         _ => Ok("Something went wrong".into()),
     }
 }
-pub async fn picture(options: &[CommandDataOption]) -> Result<Cow<'static, str>> {
-    let target = options.get(0).and_then(|x| x.resolved.as_ref());
+pub async fn picture(options: &[ResolvedOption<'_>]) -> Result<Cow<'static, str>> {
+    let target = options.get(0).map(|val| &val.value);
     match target {
-        Some(CommandDataOptionValue::User(target, _)) => Ok(target.face().into()),
+        Some(ResolvedValue::User(target, _)) => Ok(target.face().into()),
         _ => anyhow::bail!("Missing Arguments for getting profile picture"),
     }
 }

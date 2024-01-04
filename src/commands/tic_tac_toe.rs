@@ -1,27 +1,30 @@
 use anyhow::{bail, Context as _, Result};
 use serenity::{
+    client::Context,
     model::{
-        application::interaction::application_command::{
-            CommandDataOption, CommandDataOptionValue,
-        },
+        application::{ResolvedOption, ResolvedValue},
         id::UserId,
-        prelude::*,
+        mention::Mentionable,
+        user::User,
     },
-    prelude::*,
+    prelude::TypeMapKey,
 };
 use std::{borrow::Cow, collections::HashMap, fmt};
 use tokio::sync::RwLock;
 
 pub async fn command<'a>(
-    options: &'a [CommandDataOption],
+    options: &'a [ResolvedOption<'a>],
     ctx: &Context,
     user: &User,
-) -> Result<Cow<'a, str>> {
+) -> Result<Cow<'static, str>> {
     let subcommand = options.get(0).context("get subcommand")?;
-    match subcommand.name.as_str() {
-        "start" => start_game(subcommand.options.as_slice(), ctx, user).await,
-        "set" => mark_field(subcommand.options.as_slice(), ctx, user).await,
-        "cancel" => cancel_game(subcommand.options.as_slice(), ctx, user).await,
+    let ResolvedValue::SubCommand(subcommand_options) = &subcommand.value else {
+        bail!("Missing Subcommand Arguments");
+    };
+    match subcommand.name {
+        "start" => start_game(subcommand_options.as_slice(), ctx, user).await,
+        "set" => mark_field(subcommand_options.as_slice(), ctx, user).await,
+        "cancel" => cancel_game(subcommand_options.as_slice(), ctx, user).await,
         _ => Ok("Unknown Subcommand".into()),
     }
 }
@@ -58,14 +61,14 @@ pub async fn make_request(opponent: User, ctx: &Context, user: &User) -> Result<
 }
 
 pub async fn cancel_game<'a>(
-    options: &'a [CommandDataOption],
+    options: &'a [ResolvedOption<'_>],
     ctx: &Context,
     user: &User,
-) -> Result<Cow<'a, str>> {
+) -> Result<Cow<'static, str>> {
     // This will be Some(opponent) if the user spefified an opponent, otherwise None.
     let opponent = if let Some(a) = options.get(0) {
-        match a.resolved.as_ref().context("get field `opponent`")? {
-            CommandDataOptionValue::User(opponent, _) => Some(&opponent.id),
+        match &a.value {
+            ResolvedValue::User(opponent, _) => Some(&opponent.id),
             x => bail!(
                 "In {}/{}: opponent was of incorrect type: Expected User, got {x:?}```",
                 file!(),
@@ -107,14 +110,14 @@ fn find_game_with_either<'a>(
 }
 
 pub async fn start_game<'a>(
-    options: &'a [CommandDataOption],
+    options: &'a [ResolvedOption<'a>],
     ctx: &Context,
     user: &User,
-) -> Result<Cow<'a, str>> {
+) -> Result<Cow<'static, str>> {
     // This will be Some(opponent) if the user spefified an opponent, otherwise None.
     let opponent = if let Some(a) = options.get(0) {
-        match a.resolved.as_ref().context("get field `opponent`")? {
-            CommandDataOptionValue::User(opponent, _) => Some(opponent),
+        match &a.value {
+            ResolvedValue::User(opponent, _) => Some(*opponent),
             x => bail!(
                 "In {}/{}: opponent was of incorrect type: Expected User, got {x:?}```",
                 file!(),
@@ -144,10 +147,10 @@ pub async fn start_game<'a>(
 }
 
 pub async fn mark_field<'a>(
-    options: &'a [CommandDataOption],
+    options: &[ResolvedOption<'_>],
     ctx: &Context,
     user: &User,
-) -> Result<Cow<'a, str>> {
+) -> Result<Cow<'static, str>> {
     let data = ctx.data.read().await;
     let mut games = data.get::<Running>().context("get running games")?.write().await;
 
@@ -156,12 +159,10 @@ pub async fn mark_field<'a>(
             Some(a) => a,
             None => return Ok("You're not in a running game!".into()),
         };
-    let field_number: usize = options
-        .get(0)
-        .and_then(|arg| arg.value.as_ref())
-        .and_then(serde_json::Value::as_u64)
-        .and_then(|x| TryFrom::try_from(x).ok())
-        .context("Argument `field` was missing or invalid")?;
+    let field_number = match options.first().map(|o| &o.value) {
+        Some(ResolvedValue::Integer(x)) => usize::try_from(*x),
+        _ => bail!("Argument `field`: expected Integer, got {:?}", options.first()),
+    }?;
 
     let player = game.player_number(user.id);
     let res = game.place(player, field_number.wrapping_sub(1));
@@ -209,7 +210,7 @@ impl TicTacToe {
     }
 
     pub fn has_player(&self, player: UserId) -> bool {
-        player.0 == self.player_1.0 || player.0 == self.player_2.0
+        player == self.player_1 || player == self.player_2
     }
 
     pub fn player_number(&self, player: UserId) -> u8 {
