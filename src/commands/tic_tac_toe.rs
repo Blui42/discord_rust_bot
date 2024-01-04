@@ -1,15 +1,8 @@
-use anyhow::{bail, Context as _, Result};
-use serenity::{
-    client::Context,
-    model::{
-        application::{ResolvedOption, ResolvedValue},
-        id::UserId,
-        mention::Mentionable,
-        user::User,
-    },
-    prelude::TypeMapKey,
-};
 use std::{borrow::Cow, collections::HashMap, fmt};
+
+use anyhow::{bail, Context as _, Result};
+use serenity::all::{Context, Mentionable, ResolvedOption, ResolvedValue, User, UserId};
+use serenity::prelude::TypeMapKey;
 use tokio::sync::RwLock;
 
 pub async fn command<'a>(

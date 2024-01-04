@@ -6,15 +6,11 @@ pub mod level_cookies;
 pub mod rock_paper_scissors;
 pub mod tic_tac_toe;
 
-use serenity::builder::{CreateCommand, CreateCommandOption};
-use serenity::{
-    client::Context,
-    model::{
-        application::{CommandInteraction, CommandOptionType},
-        Permissions,
-    },
-};
 use std::borrow::Cow;
+
+use serenity::all::{
+    CommandInteraction, CommandOptionType, Context, CreateCommand, CreateCommandOption, Permissions,
+};
 
 pub async fn respond_to<'a>(
     ctx: &Context,

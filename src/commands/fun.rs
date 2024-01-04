@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 use anyhow::{Context as _, Result};
-use serenity::model::application::CommandDataOption;
+use serenity::all::CommandDataOption;
 
 fn roll_dice(rolls: u8, sides: u8) -> (u16, u8, u8, Vec<u8>) {
     let mut total: u16 = 0;

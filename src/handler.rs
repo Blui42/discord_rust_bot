@@ -1,15 +1,10 @@
+use serenity::all::{
+    Command, Context, CreateInteractionResponse, CreateInteractionResponseMessage, EventHandler,
+    GuildId, Interaction, Message, Ready,
+};
+
 use crate::commands;
 use crate::data::{config::Config, Data};
-use serenity::{
-    builder::{CreateInteractionResponse, CreateInteractionResponseMessage},
-    client::{Context, EventHandler},
-    model::{
-        application::{Command, Interaction},
-        channel::Message,
-        gateway::Ready,
-        id::GuildId,
-    },
-};
 
 pub struct Handler;
 

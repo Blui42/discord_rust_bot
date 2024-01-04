@@ -1,11 +1,7 @@
 use std::borrow::Cow;
 
 use anyhow::{Context as _, Result};
-use serenity::{
-    builder::GetMessages,
-    client::Context,
-    model::{application::CommandDataOption, id::ChannelId},
-};
+use serenity::all::{ChannelId, CommandDataOption, Context, GetMessages};
 
 pub async fn delete(
     options: &[CommandDataOption],

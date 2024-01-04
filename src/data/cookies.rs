@@ -1,5 +1,4 @@
-use std::collections::HashMap;
-use std::fs;
+use std::{collections::HashMap, fs};
 
 pub struct Cookies<'a> {
     data: HashMap<u64, u64>,

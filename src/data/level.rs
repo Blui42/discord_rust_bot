@@ -1,6 +1,6 @@
+use std::{collections::HashMap, fs};
+
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::fs;
 
 pub struct Level<'a> {
     data: HashMap<u64, HashMap<u64, XPCounter>>,

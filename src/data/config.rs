@@ -1,7 +1,7 @@
 #![allow(dead_code)]
-use serde::Deserialize;
 use std::{fs, num::NonZeroU64};
-extern crate toml;
+
+use serde::Deserialize;
 
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Deserialize, Debug)]

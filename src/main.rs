@@ -4,12 +4,12 @@ mod commands;
 mod data;
 mod handler;
 
+use std::{env, sync::Arc};
+
 use anyhow::Context as _;
 use data::{config::Config, Data};
 use handler::Handler;
-use serenity::{client::Client, model::gateway::GatewayIntents};
-use std::env;
-use std::sync::Arc;
+use serenity::all::{Client, GatewayIntents};
 use tokio::{
     sync::RwLock,
     time::{sleep, Duration},

@@ -1,9 +1,8 @@
 use std::borrow::Cow;
 
 use anyhow::{bail, Context as _, Result};
-use serenity::model::{
-    application::{CommandDataOption, CommandDataOptionValue, ResolvedOption, ResolvedValue},
-    id::GuildId,
+use serenity::all::{
+    CommandDataOption, CommandDataOptionValue, GuildId, ResolvedOption, ResolvedValue,
 };
 
 pub async fn id<'a>(
