@@ -4,7 +4,6 @@ mod commands;
 mod data;
 use anyhow::Context as _;
 use data::{config::Config, Data};
-use dotenv::dotenv;
 use serenity::{
     builder::{CreateInteractionResponse, CreateInteractionResponseMessage},
     model::{
@@ -92,16 +91,14 @@ impl Handler {}
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    dotenv().ok(); // place variables from .env into this environment
+    dotenv::dotenv().ok(); // place variables from .env into this environment
 
-    let token: String = env::var("DISCORD_TOKEN")
-        .ok()
+    let token = env::var("DISCORD_TOKEN")
         .context("Put DISCORD_TOKEN=YourTokenHere into the file '.env' or the environment")?;
     let mut config = Config::from_file("config.toml").unwrap_or_default();
 
-    // create client
-    let mut client =
-        Client::builder(&token, GatewayIntents::GUILD_MESSAGES).event_handler(Handler).await?;
+    let intents = GatewayIntents::GUILD_MESSAGES;
+    let mut client = Client::builder(&token, intents).event_handler(Handler).await?;
 
     if let Ok(info) = client.http.get_current_application_info().await {
         if let Some(team) = info.team {
