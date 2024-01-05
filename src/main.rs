@@ -3,6 +3,7 @@
 mod commands;
 mod data;
 mod handler;
+mod utils;
 
 use std::{env, sync::Arc};
 

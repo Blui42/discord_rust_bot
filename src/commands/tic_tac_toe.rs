@@ -1,5 +1,7 @@
 use std::{borrow::Cow, collections::HashMap, fmt};
 
+use crate::utils::get_data;
+
 use anyhow::{bail, Context as _, Result};
 use serenity::all::{Context, Mentionable, ResolvedOption, ResolvedValue, User, UserId};
 use serenity::prelude::TypeMapKey;
@@ -27,7 +29,7 @@ pub async fn make_request(opponent: User, ctx: &Context, user: &User) -> Result<
         return Ok("That would be kind of sad".into());
     }
     let data = ctx.data.read().await;
-    let current_games = data.get::<Running>().context("get running games")?.read().await;
+    let current_games = get_data::<Running>(&data)?.read().await;
     for game in current_games.iter() {
         if let Some(oppnent) = game.opponent(user.id) {
             return Ok(format!(
@@ -41,12 +43,12 @@ pub async fn make_request(opponent: User, ctx: &Context, user: &User) -> Result<
         }
     }
     drop(current_games);
-    let mut game_queue = data.get::<Queue>().context("Get game queue")?.write().await;
+    let mut game_queue = get_data::<Queue>(&data)?.write().await;
     let opponent_mentioned = opponent.mention();
-    match game_queue.insert(user.clone(), opponent) {
+    match game_queue.insert(user.id, opponent.id) {
         Some(previous_opponent) => Ok(format!(
             "You cancelled your game against {} and challenged {opponent_mentioned}",
-            previous_opponent.tag()
+            previous_opponent.to_user(&ctx.http).await?.tag()
         )
         .into()),
         None => Ok(format!("You challenged {opponent_mentioned}!").into()),
@@ -73,17 +75,17 @@ pub async fn cancel_game<'a>(
     };
 
     let data = ctx.data.read().await;
-    let game_queue = data.get::<Queue>().context("get game queue")?.read().await;
-    if game_queue.contains_key(user) {
+    let game_queue = get_data::<Queue>(&data)?.read().await;
+    if game_queue.contains_key(&user.id) {
         drop(game_queue);
-        data.get::<Queue>().context("get game queue")?.write().await.remove(user);
+        get_data::<Queue>(&data)?.write().await.remove(&user.id);
         return Ok("Cancelled game.".into());
     }
 
-    let running_games = data.get::<Running>().context("get running games")?.read().await;
+    let running_games = get_data::<Running>(&data)?.read().await;
     if let Some(index) = find_game_with_either(running_games.iter(), user, opponent) {
         drop(running_games);
-        data.get::<Running>().context("get running games")?.write().await.swap_remove(index);
+        get_data::<Running>(&data)?.write().await.swap_remove(index);
         return Ok("You gave up.".into());
     }
     Ok("There was no game to cancel".into())
@@ -122,14 +124,13 @@ pub async fn start_game<'a>(
     };
 
     let data = ctx.data.read().await;
-    let queue = data.get::<Queue>().context("get game queue")?;
+    let queue = get_data::<Queue>(&data)?;
     let games = queue.read().await;
-    if let Some(opponent) = find_game(user, opponent, &games).await {
-        let opponent = opponent.clone();
+    if let Some(&opponent) = find_game(user, opponent.map(|o| &o.id), &games).await {
         drop(games);
         queue.write().await.remove(&opponent);
-        let mut running_games = data.get::<Running>().context("get running games")?.write().await;
-        running_games.push(TicTacToe::new(user.id, opponent.id));
+        let mut running_games = get_data::<Running>(&data)?.write().await;
+        running_games.push(TicTacToe::new(user.id, opponent));
         Ok("Game initiated! Use `/ttt set <1-9>` to play!".into())
     } else if let Some(opp) = opponent {
         drop(games);
@@ -145,7 +146,7 @@ pub async fn mark_field<'a>(
     user: &User,
 ) -> Result<Cow<'static, str>> {
     let data = ctx.data.read().await;
-    let mut games = data.get::<Running>().context("get running games")?.write().await;
+    let mut games = get_data::<Running>(&data)?.write().await;
 
     let (index, game): (usize, &mut TicTacToe) =
         match games.iter_mut().enumerate().find(|(_, game)| game.has_player(user.id)) {
@@ -180,13 +181,13 @@ pub async fn mark_field<'a>(
 
 pub async fn find_game<'a>(
     opponent: &'_ User,
-    host: Option<&'a User>,
-    games: &'a HashMap<User, User>,
-) -> Option<&'a User> {
+    host: Option<&'a UserId>,
+    games: &'a HashMap<UserId, UserId>,
+) -> Option<&'a UserId> {
     if let Some(host) = host {
-        return (games.get(host) == Some(opponent)).then_some(host);
+        return (games.get(host) == Some(&opponent.id)).then_some(host);
     }
-    games.iter().find(|(_, o)| **o == *opponent).map(|h| h.0)
+    games.iter().find(|(_, o)| **o == opponent.id).map(|h| h.0)
 }
 
 #[derive(Clone, PartialEq, Eq)]
@@ -386,5 +387,5 @@ impl TypeMapKey for Running {
 }
 pub struct Queue;
 impl TypeMapKey for Queue {
-    type Value = RwLock<HashMap<User, User>>;
+    type Value = RwLock<HashMap<UserId, UserId>>;
 }
