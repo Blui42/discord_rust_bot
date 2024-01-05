@@ -1,8 +1,11 @@
+use std::borrow::Cow;
 use std::fmt::Debug;
 use std::panic::Location;
 use std::{error::Error, fmt::Display};
 
 use serenity::prelude::{TypeMap, TypeMapKey};
+
+pub type CommandResult = anyhow::Result<Cow<'static, str>>;
 
 #[track_caller]
 pub fn get_data<T: TypeMapKey>(typemap: &TypeMap) -> Result<&T::Value, GetDataError> {

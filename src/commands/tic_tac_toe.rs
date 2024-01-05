@@ -1,6 +1,6 @@
-use std::{borrow::Cow, collections::HashMap, fmt};
+use std::{collections::HashMap, fmt};
 
-use crate::utils::get_data;
+use crate::utils::{get_data, CommandResult};
 
 use anyhow::{bail, Context as _, Result};
 use serenity::all::{Context, Mentionable, ResolvedOption, ResolvedValue, User, UserId};
@@ -11,7 +11,7 @@ pub async fn command<'a>(
     options: &'a [ResolvedOption<'a>],
     ctx: &Context,
     user: &User,
-) -> Result<Cow<'static, str>> {
+) -> CommandResult {
     let subcommand = options.get(0).context("get subcommand")?;
     let ResolvedValue::SubCommand(subcommand_options) = &subcommand.value else {
         bail!("Missing Subcommand Arguments");
@@ -20,11 +20,11 @@ pub async fn command<'a>(
         "start" => start_game(subcommand_options.as_slice(), ctx, user).await,
         "set" => mark_field(subcommand_options.as_slice(), ctx, user).await,
         "cancel" => cancel_game(subcommand_options.as_slice(), ctx, user).await,
-        _ => Ok("Unknown Subcommand".into()),
+        _ => bail!("Unknown Command: {subcommand:?}"),
     }
 }
 
-pub async fn make_request(opponent: User, ctx: &Context, user: &User) -> Result<Cow<'static, str>> {
+pub async fn make_request(opponent: User, ctx: &Context, user: &User) -> CommandResult {
     if opponent.id == user.id {
         return Ok("That would be kind of sad".into());
     }
@@ -59,7 +59,7 @@ pub async fn cancel_game<'a>(
     options: &'a [ResolvedOption<'_>],
     ctx: &Context,
     user: &User,
-) -> Result<Cow<'static, str>> {
+) -> CommandResult {
     // This will be Some(opponent) if the user spefified an opponent, otherwise None.
     let opponent = if let Some(a) = options.get(0) {
         match &a.value {
@@ -104,11 +104,11 @@ fn find_game_with_either<'a>(
         .map(|(index, _)| index)
 }
 
-pub async fn start_game<'a>(
-    options: &'a [ResolvedOption<'a>],
+pub async fn start_game(
+    options: &[ResolvedOption<'_>],
     ctx: &Context,
     user: &User,
-) -> Result<Cow<'static, str>> {
+) -> CommandResult {
     // This will be Some(opponent) if the user spefified an opponent, otherwise None.
     let opponent = if let Some(a) = options.get(0) {
         match &a.value {
@@ -144,7 +144,7 @@ pub async fn mark_field<'a>(
     options: &[ResolvedOption<'_>],
     ctx: &Context,
     user: &User,
-) -> Result<Cow<'static, str>> {
+) -> CommandResult {
     let data = ctx.data.read().await;
     let mut games = get_data::<Running>(&data)?.write().await;
 

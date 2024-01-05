@@ -1,13 +1,13 @@
-use std::borrow::Cow;
-
-use anyhow::{Context as _, Result};
+use anyhow::Context as _;
 use serenity::all::{ChannelId, CommandDataOption, Context, GetMessages};
+
+use crate::utils::CommandResult;
 
 pub async fn delete(
     options: &[CommandDataOption],
     channel: ChannelId,
     ctx: &Context,
-) -> Result<Cow<'static, str>> {
+) -> CommandResult {
     let amount = options
         .get(0)
         .and_then(|arg| arg.value.as_i64())

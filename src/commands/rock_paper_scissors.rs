@@ -1,4 +1,6 @@
-use std::{borrow::Cow, collections::HashMap, str::FromStr, sync::Arc};
+use std::{collections::HashMap, str::FromStr, sync::Arc};
+
+use crate::utils::CommandResult;
 
 use anyhow::{bail, Result};
 use serenity::all::{Context, ResolvedOption, ResolvedValue, User, UserId};
@@ -9,7 +11,7 @@ pub async fn command<'a>(
     options: &'a [ResolvedOption<'_>],
     ctx: &Context,
     user: &User,
-) -> Result<Cow<'static, str>> {
+) -> CommandResult {
     let Some(ResolvedValue::User(opponent, _)) = options.get(0).map(|x| &x.value) else {
         bail!("No user arg.");
     };

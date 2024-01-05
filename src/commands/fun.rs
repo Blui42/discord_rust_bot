@@ -1,7 +1,7 @@
-use std::borrow::Cow;
-
-use anyhow::{Context as _, Result};
+use anyhow::Context as _;
 use serenity::all::CommandDataOption;
+
+use crate::utils::CommandResult;
 
 fn roll_dice(rolls: u8, sides: u8) -> (u16, u8, u8, Vec<u8>) {
     let mut total: u16 = 0;
@@ -21,7 +21,7 @@ fn roll_dice(rolls: u8, sides: u8) -> (u16, u8, u8, Vec<u8>) {
     }
     (total, min, max, summary)
 }
-pub async fn roll(options: &[CommandDataOption]) -> Result<Cow<'_, str>> {
+pub async fn roll(options: &[CommandDataOption]) -> CommandResult {
     let rolls: u8 = options
         .get(0)
         .and_then(|arg| arg.value.as_i64())
@@ -43,7 +43,7 @@ pub async fn roll(options: &[CommandDataOption]) -> Result<Cow<'_, str>> {
         Ok(format!("**Rolled {rolls} {sides}-sided dice.** \n**Result: `{total}`**\n Rolled {min}x1 and {max}x{sides} \n\n Detailed: ```\n{summary:?}\n```").into())
     }
 }
-pub async fn coin() -> Result<Cow<'static, str>> {
+pub async fn coin() -> CommandResult {
     Ok(flip_coin().into())
 }
 
