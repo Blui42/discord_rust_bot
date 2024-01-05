@@ -9,7 +9,6 @@ This is a simple, general-purpose discord bot written in Rust.
 To use this bot, create a  '.env' file and format it this way:
 
 ```
-APPLICATION_ID=yourApplicationId
 DISCORD_TOKEN=yourBotToken
 ```
 
