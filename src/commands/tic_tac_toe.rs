@@ -166,10 +166,10 @@ pub async fn mark_field<'a>(
         Err(PlaceError::AlreadyFull) => return Ok(format!("Sorry but no.\n{game:#}").into()),
     }
 
-    let winner = game.check_all();
-    if winner != 0 {
+    if let Some(winner) = game.check_all() {
         let game = games.swap_remove(index);
-        Ok(format!("Player {winner} has won!\nPlaying field: \n{game}").into())
+        let winner_name = game.player_id(winner).mention();
+        Ok(format!("{winner_name} has won!\nPlaying field: \n{game}").into())
     } else if game.will_tie() {
         let game = games.swap_remove(index);
         Ok(format!("It's a tie!\nPlaying field: \n{game}").into())
@@ -191,28 +191,35 @@ pub async fn find_game<'a>(
 
 #[derive(Clone, PartialEq, Eq)]
 pub struct TicTacToe {
-    field: [u8; 9],
+    field: [Option<Player>; 9],
     pub player_1: UserId,
     pub player_2: UserId,
-    pub previous_player: u8,
+    pub previous_player: Option<Player>,
 }
 
 impl TicTacToe {
     pub fn new(player_1: UserId, player_2: UserId) -> Self {
-        Self { field: [0; 9], player_1, player_2, previous_player: 0 }
+        Self { field: [None; 9], player_1, player_2, previous_player: None }
     }
 
     pub fn has_player(&self, player: UserId) -> bool {
         player == self.player_1 || player == self.player_2
     }
 
-    pub fn player_number(&self, player: UserId) -> u8 {
+    pub fn player_number(&self, player: UserId) -> Option<Player> {
         if player == self.player_1 {
-            1
+            Some(Player::One)
         } else if player == self.player_2 {
-            2
+            Some(Player::Two)
         } else {
-            0
+            None
+        }
+    }
+
+    pub fn player_id(&self, player: Player) -> UserId {
+        match player {
+            Player::One => self.player_1,
+            Player::Two => self.player_2,
         }
     }
 
@@ -226,32 +233,33 @@ impl TicTacToe {
         None
     }
 
-    pub fn check_rows(&self) -> u8 {
-        for i in (0..9).step_by(3) {
-            if self.field[i] == self.field[i + 1] && self.field[i] == self.field[i + 2] {
-                return self.field[i];
-            }
-        }
-        0
+    pub fn check_rows(&self) -> Option<Player> {
+        self.field
+            .chunks_exact(3)
+            .find(|x| x[0].is_some() && x[0] == x[1] && x[1] == x[2])
+            .and_then(|x| x[0])
     }
 
-    pub fn check_columns(&self) -> u8 {
+    pub fn check_columns(&self) -> Option<Player> {
         for i in 0..3 {
-            if self.field[i] == self.field[i + 3] && self.field[i + 3] == self.field[i + 6] {
+            if self.field[i].is_some()
+                && self.field[i] == self.field[i + 3]
+                && self.field[i + 3] == self.field[i + 6]
+            {
                 return self.field[i];
             }
         }
-        0
+        None
     }
 
-    pub fn check_diagonal(&self) -> u8 {
-        if self.field[4] != 0
+    pub fn check_diagonal(&self) -> Option<Player> {
+        if self.field[4].is_some()
             && ((self.field[0] == self.field[4] && self.field[4] == self.field[8])
                 || (self.field[6] == self.field[4] && self.field[4] == self.field[2]))
         {
             self.field[4]
         } else {
-            0
+            None
         }
     }
 
@@ -262,51 +270,43 @@ impl TicTacToe {
 
         let mut game = self.clone();
         game.field.iter_mut().for_each(|f| {
-            if *f == 0 {
-                *f = 1;
+            if f.is_none() {
+                *f = Some(Player::One);
             }
         });
 
-        if game.check_all() != 0 {
+        if game.check_all().is_some() {
             return false;
         }
 
         game.field = self.field;
         game.field.iter_mut().for_each(|f| {
-            if *f == 0 {
-                *f = 2;
+            if f.is_none() {
+                *f = Some(Player::Two);
             }
         });
-        if game.check_all() != 0 {
+        if game.check_all().is_some() {
             return false;
         }
         true
     }
 
     pub fn is_full(&self) -> bool {
-        self.field.iter().all(|square| *square != 0)
+        self.field.iter().all(Option::is_some)
     }
 
-    pub fn check_all(&self) -> u8 {
-        let columns = self.check_columns();
-        if columns != 0 {
-            return columns;
-        };
-        let rows = self.check_rows();
-        if rows != 0 {
-            return rows;
-        }
-        self.check_diagonal()
+    pub fn check_all(&self) -> Option<Player> {
+        self.check_columns().or_else(|| self.check_rows()).or_else(|| self.check_diagonal())
     }
 
-    pub fn place(&mut self, player: u8, field: usize) -> Result<(), PlaceError> {
+    pub fn place(&mut self, player: Option<Player>, field: usize) -> Result<(), PlaceError> {
         use PlaceError::{AlreadyFull, NotYourTurn, OutOfBounds};
         if self.previous_player == player {
             return Err(NotYourTurn);
         }
         let field = self.field.get_mut(field).ok_or(OutOfBounds)?;
 
-        if *field != 0 {
+        if field.is_some() {
             return Err(AlreadyFull);
         }
 
@@ -324,10 +324,9 @@ impl fmt::Display for TicTacToe {
             ];
             for (index, (element, nr)) in self.field.iter().zip(NUMBER_FIELD.iter()).enumerate() {
                 match element {
-                    0 => write!(f, "{nr}")?,
-                    1 => write!(f, ":negative_squared_cross_mark:")?,
-                    2 => write!(f, ":o2:")?,
-                    _ => write!(f, ":interrobang:")?,
+                    None => write!(f, "{nr}")?,
+                    Some(Player::One) => write!(f, ":negative_squared_cross_mark:")?,
+                    Some(Player::Two) => write!(f, ":o2:")?,
                 }
                 if (index + 1) % 3 == 0 {
                     writeln!(f)?;
@@ -336,10 +335,9 @@ impl fmt::Display for TicTacToe {
         } else {
             for (index, element) in self.field.iter().enumerate() {
                 match element {
-                    0 => write!(f, ":blue_square:")?,
-                    1 => write!(f, ":negative_squared_cross_mark:")?,
-                    2 => write!(f, ":o2:")?,
-                    _ => write!(f, ":interrobang:")?,
+                    None => write!(f, ":blue_square:")?,
+                    Some(Player::One) => write!(f, ":negative_squared_cross_mark:")?,
+                    Some(Player::Two) => write!(f, ":o2:")?,
                 }
                 if (index + 1) % 3 == 0 {
                     writeln!(f)?;
@@ -347,6 +345,23 @@ impl fmt::Display for TicTacToe {
             }
         }
         Ok(())
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Player {
+    One,
+    Two,
+}
+impl TryFrom<u8> for Player {
+    type Error = ();
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            1 => Ok(Self::One),
+            2 => Ok(Self::Two),
+            _ => Err(()),
+        }
     }
 }
 
