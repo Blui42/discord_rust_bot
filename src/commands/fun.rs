@@ -1,8 +1,3 @@
-use anyhow::Context as _;
-use serenity::all::CommandDataOption;
-
-use crate::utils::CommandResult;
-
 fn roll_dice(rolls: u8, sides: u8) -> (u16, u8, u8, Vec<u8>) {
     let mut total: u16 = 0;
     let mut summary = Vec::with_capacity(sides.into());
@@ -21,32 +16,25 @@ fn roll_dice(rolls: u8, sides: u8) -> (u16, u8, u8, Vec<u8>) {
     }
     (total, min, max, summary)
 }
-pub async fn roll(options: &[CommandDataOption]) -> CommandResult {
-    let rolls: u8 = options
-        .get(0)
-        .and_then(|arg| arg.value.as_i64())
-        .and_then(|x| u8::try_from(x).ok())
-        .context("Missing rolls argument")?;
-    let sides: u8 = options
-        .get(1)
-        .and_then(|arg| arg.value.as_i64())
-        .and_then(|x| u8::try_from(x).ok())
-        .context("Missing sides argument")?;
+#[poise::command(slash_command)]
+pub async fn roll(ctx: crate::utils::Context<'_>, rolls: u8, sides: u8) -> anyhow::Result<()> {
     if rolls == 0 {
-        Ok("Rolled no dice. (What did you expect?)".into())
+        ctx.reply("Rolled no dice. (What did you expect?)").await?;
     } else if sides == 0 {
-        Ok("0-sided dice are too dangerous to use.".into())
+        ctx.reply("0-sided dice are too dangerous to use.").await?;
     } else if sides == 1 {
-        Ok("*Throws a ball*".into())
+        ctx.reply("*Throws a ball*").await?;
     } else {
         let (total, min, max, summary) = roll_dice(rolls, sides);
-        Ok(format!("**Rolled {rolls} {sides}-sided dice.** \n**Result: `{total}`**\n Rolled {min}x1 and {max}x{sides} \n\n Detailed: ```\n{summary:?}\n```").into())
+        ctx.reply(format!("**Rolled {rolls} {sides}-sided dice.** \n**Result: `{total}`**\n Rolled {min}x1 and {max}x{sides} \n\n Detailed: ```\n{summary:?}\n```")).await?;
     }
+    Ok(())
 }
-pub async fn coin() -> CommandResult {
-    Ok(flip_coin().into())
+#[poise::command(slash_command)]
+pub async fn coin(ctx: crate::utils::Context<'_>) -> anyhow::Result<()> {
+    ctx.say(flip_coin()).await?;
+    Ok(())
 }
-
 #[inline]
 pub fn flip_coin() -> &'static str {
     match fastrand::i8(..) {

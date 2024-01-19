@@ -1,33 +1,26 @@
-#![allow(dead_code)]
-use std::{fs, num::NonZeroU64};
+use std::env;
 
-use serde::Deserialize;
+use poise::serenity_prelude::{GuildId, UserId};
 
-#[allow(clippy::struct_excessive_bools)]
-#[derive(Deserialize, Debug)]
+#[derive(Debug, Default)]
 pub struct Config {
-    #[serde(default)]
-    pub home_server: Option<NonZeroU64>,
-    #[serde(default)]
-    pub owners: Vec<u64>,
-    #[serde(default)]
-    pub levels: bool,
-    #[serde(default)]
-    pub cookies: bool,
+    pub token: String,
+    pub owners: Vec<UserId>,
+    pub home_server: Option<GuildId>,
 }
 impl Config {
-    pub fn from_file(path: &str) -> Option<Self> {
-        let file_content = fs::read_to_string(path).ok()?;
-        toml::from_str::<Self>(&file_content).ok()
-    }
-}
+    pub fn from_env() -> Option<Self> {
+        let Ok(token) = env::var("DISCORD_TOKEN") else {
+            return None;
+        };
+        let owners = env::var("DISCORD_BOT_OWNERS")
+            .unwrap_or_default()
+            .split(',')
+            .map(str::parse)
+            .filter_map(Result::ok)
+            .collect();
+        let home_server = env::var("DISCORD_HOME_SERVER").unwrap_or_default().parse().ok();
 
-impl serenity::prelude::TypeMapKey for Config {
-    type Value = Self;
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Self { home_server: None, owners: Vec::new(), cookies: true, levels: true }
+        Some(Self { token, owners, home_server })
     }
 }

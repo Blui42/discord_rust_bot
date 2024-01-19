@@ -1,45 +1,36 @@
-use std::{collections::HashMap, str::FromStr, sync::Arc};
+use std::str::FromStr;
 
-use crate::utils::CommandResult;
+use poise::serenity_prelude::User;
+use tokio::time::Instant;
 
-use anyhow::{bail, Result};
-use serenity::all::{Context, ResolvedOption, ResolvedValue, User, UserId};
-use serenity::prelude::TypeMapKey;
-use tokio::{sync::Mutex, time::Instant};
-
-pub async fn command<'a>(
-    options: &'a [ResolvedOption<'_>],
-    ctx: &Context,
-    user: &User,
-) -> CommandResult {
-    let Some(ResolvedValue::User(opponent, _)) = options.get(0).map(|x| &x.value) else {
-        bail!("No user arg.");
-    };
-    if *opponent == user {
-        return Ok("You can't play against yourself".into());
+#[poise::command(slash_command, rename = "rockpaperscissors")]
+pub async fn rock_paper_scissors(
+    ctx: crate::utils::Context<'_>,
+    opponent: User,
+    thing: Rps,
+) -> anyhow::Result<()> {
+    let author = ctx.author();
+    if opponent == *author {
+        ctx.reply("You can't play againt yourself").await?;
+        return Ok(());
     }
-
-    let Some(ResolvedValue::String(play)) = options.get(1).map(|x| &x.value) else {
-        bail!("No option arg.");
-    };
-    let Ok(play) = play.parse::<Rps>() else {
-        bail!("Invalid input string");
-    };
-    let mutex = ctx.data.read().await.get::<Queue>().unwrap().clone();
-    let mut queue = mutex.lock().await;
-    if let Some((a, timestamp)) = queue.remove(&(user.id, opponent.id)) {
+    let mut map = ctx.data().rps.lock().await;
+    if let Some((a, timestamp)) = map.remove(&(author.id, opponent.id)) {
         let duration_ms = Instant::now().duration_since(timestamp).as_millis();
         if duration_ms < 5000 {
-            let result = play.match_against(a);
+            let result = thing.match_against(a);
             // 202f: thin non-breaking whitespace
-            return Ok(format!("{result}\nIt took you {duration_ms}\u{202f}ms to respond.").into());
+            ctx.reply(format!("{result}\nIt took you {duration_ms}\u{202f}ms to respond.")).await?;
+            return Ok(());
         }
     }
-    queue.insert((opponent.id, user.id), (play, Instant::now()));
-    Ok("Waiting for your opponent...".into())
+    map.insert((opponent.id, author.id), (thing, Instant::now()));
+    drop(map);
+    ctx.reply("Waiting for your opponent...").await?;
+    Ok(())
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, poise::ChoiceParameter)]
 pub enum Rps {
     Rock,
     Paper,
@@ -92,9 +83,4 @@ impl FromStr for Rps {
             _ => Err(()),
         }
     }
-}
-pub struct Queue;
-
-impl TypeMapKey for Queue {
-    type Value = Arc<Mutex<HashMap<(UserId, UserId), (Rps, Instant)>>>;
 }

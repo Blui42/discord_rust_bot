@@ -1,185 +1,154 @@
 use std::{collections::HashMap, fmt};
 
-use crate::utils::{get_data, CommandResult};
+use crate::utils::Context;
 
-use anyhow::{bail, Context as _, Result};
-use serenity::all::{Context, Mentionable, ResolvedOption, ResolvedValue, User, UserId};
-use serenity::prelude::TypeMapKey;
-use tokio::sync::RwLock;
+use poise::{
+    serenity_prelude::{self as serenity, CreateAllowedMentions, Mentionable, User, UserId},
+    CreateReply,
+};
 
-pub async fn command<'a>(
-    options: &'a [ResolvedOption<'a>],
-    ctx: &Context,
-    user: &User,
-) -> CommandResult {
-    let subcommand = options.get(0).context("get subcommand")?;
-    let ResolvedValue::SubCommand(subcommand_options) = &subcommand.value else {
-        bail!("Missing Subcommand Arguments");
-    };
-    match subcommand.name {
-        "start" => start_game(subcommand_options.as_slice(), ctx, user).await,
-        "set" => mark_field(subcommand_options.as_slice(), ctx, user).await,
-        "cancel" => cancel_game(subcommand_options.as_slice(), ctx, user).await,
-        _ => bail!("Unknown Command: {subcommand:?}"),
-    }
+#[poise::command(slash_command, subcommands("start", "set", "cancel"))]
+#[allow(clippy::unused_async)]
+pub async fn ttt(_: Context<'_>) -> anyhow::Result<()> {
+    Ok(())
 }
-
-pub async fn make_request(opponent: User, ctx: &Context, user: &User) -> CommandResult {
-    if opponent.id == user.id {
-        return Ok("That would be kind of sad".into());
-    }
-    let data = ctx.data.read().await;
-    let current_games = get_data::<Running>(&data)?.read().await;
-    for game in current_games.iter() {
-        if let Some(oppnent) = game.opponent(user.id) {
-            return Ok(format!(
-                "You are already in a game against {}!",
-                oppnent.to_user(&ctx.http).await?.tag()
-            )
-            .into());
-        }
-        if game.has_player(opponent.id) {
-            return Ok(format!("{} is already in a game!", opponent.tag()).into());
-        }
-    }
-    drop(current_games);
-    let mut game_queue = get_data::<Queue>(&data)?.write().await;
-    let opponent_mentioned = opponent.mention();
-    match game_queue.insert(user.id, opponent.id) {
-        Some(previous_opponent) => Ok(format!(
-            "You cancelled your game against {} and challenged {opponent_mentioned}",
-            previous_opponent.to_user(&ctx.http).await?.tag()
-        )
-        .into()),
-        None => Ok(format!("You challenged {opponent_mentioned}!").into()),
-    }
-}
-
-pub async fn cancel_game<'a>(
-    options: &'a [ResolvedOption<'_>],
-    ctx: &Context,
-    user: &User,
-) -> CommandResult {
-    // This will be Some(opponent) if the user spefified an opponent, otherwise None.
-    let opponent = if let Some(a) = options.get(0) {
-        match &a.value {
-            ResolvedValue::User(opponent, _) => Some(&opponent.id),
-            x => bail!(
-                "In {}/{}: opponent was of incorrect type: Expected User, got {x:?}```",
-                file!(),
-                line!(),
-            ),
-        }
-    } else {
-        None
-    };
-
-    let data = ctx.data.read().await;
-    let game_queue = get_data::<Queue>(&data)?.read().await;
-    if game_queue.contains_key(&user.id) {
-        drop(game_queue);
-        get_data::<Queue>(&data)?.write().await.remove(&user.id);
-        return Ok("Cancelled game.".into());
-    }
-
-    let running_games = get_data::<Running>(&data)?.read().await;
-    if let Some(index) = find_game_with_either(running_games.iter(), user, opponent) {
-        drop(running_games);
-        get_data::<Running>(&data)?.write().await.swap_remove(index);
-        return Ok("You gave up.".into());
-    }
-    Ok("There was no game to cancel".into())
-}
-
-fn find_game_with_either<'a>(
-    game_queue: impl Iterator<Item = &'a TicTacToe>,
-    user: &User,
-    opponent: Option<&UserId>,
-) -> Option<usize> {
-    game_queue
-        .enumerate()
-        .find(|(_, game)| {
-            game.has_player(user.id) && opponent.map_or(true, |opp| game.has_player(*opp))
-        })
-        .map(|(index, _)| index)
-}
-
-pub async fn start_game(
-    options: &[ResolvedOption<'_>],
-    ctx: &Context,
-    user: &User,
-) -> CommandResult {
-    // This will be Some(opponent) if the user spefified an opponent, otherwise None.
-    let opponent = if let Some(a) = options.get(0) {
-        match &a.value {
-            ResolvedValue::User(opponent, _) => Some(*opponent),
-            x => bail!(
-                "In {}/{}: opponent was of incorrect type: Expected User, got {x:?}```",
-                file!(),
-                line!(),
-            ),
-        }
-    } else {
-        None
-    };
-
-    let data = ctx.data.read().await;
-    let queue = get_data::<Queue>(&data)?;
-    let games = queue.read().await;
-    if let Some(&opponent) = find_game(user, opponent.map(|o| &o.id), &games).await {
+#[poise::command(slash_command)]
+pub async fn start(ctx: Context<'_>, opponent: Option<serenity::User>) -> anyhow::Result<()> {
+    let user = ctx.author();
+    let games = ctx.data().ttt_queue.read().await;
+    if let Some(&opponent) = find_game(user, opponent.as_ref().map(|o| &o.id), &games) {
         drop(games);
-        queue.write().await.remove(&opponent);
-        let mut running_games = get_data::<Running>(&data)?.write().await;
-        running_games.push(TicTacToe::new(user.id, opponent));
-        Ok("Game initiated! Use `/ttt set <1-9>` to play!".into())
+        ctx.data().ttt_queue.write().await.remove(&opponent);
+        ctx.data().ttt_games.write().await.push(TicTacToe::new(user.id, opponent));
+        ctx.reply("Game initiated! Use `/ttt set <1-9>` to play!").await?;
     } else if let Some(opp) = opponent {
         drop(games);
-        make_request(opp.clone(), ctx, user).await
+        make_request(ctx, opp).await?;
     } else {
-        Ok("You have no incoming requests".into())
+        ctx.reply("You have no incoming requests").await?;
     }
+    Ok(())
+}
+pub async fn make_request(ctx: Context<'_>, opponent: serenity::User) -> anyhow::Result<()> {
+    let user = ctx.author();
+    if opponent.id == user.id {
+        ctx.reply("You can't play against yourself").await?;
+        return Ok(());
+    }
+    {
+        let current_games = ctx.data().ttt_games.read().await;
+        for game in &*current_games {
+            if let Some(opp) = game.opponent(user.id) {
+                ctx.send(
+                    CreateReply::default()
+                        .allowed_mentions(CreateAllowedMentions::new())
+                        .content(format!("You are already in a game against {}!", opp.mention())),
+                )
+                .await?;
+                return Ok(());
+            }
+            if game.has_player(opponent.id) {
+                ctx.reply(format!("{} is already in a game!", opponent.tag())).await?;
+                return Ok(());
+            }
+        }
+    }
+    let opponent_mentioned = opponent.mention();
+    if let Some(previous_opponent) = ctx.data().ttt_queue.write().await.insert(user.id, opponent.id)
+    {
+        ctx.reply(format!(
+            "You cancelled your game against {} and challenged {opponent_mentioned}",
+            previous_opponent.to_user(&ctx).await?.tag()
+        ))
+        .await?
+    } else {
+        ctx.reply(format!("You challenged {opponent_mentioned}!")).await?
+    };
+
+    Ok(())
 }
 
-pub async fn mark_field<'a>(
-    options: &[ResolvedOption<'_>],
-    ctx: &Context,
-    user: &User,
-) -> CommandResult {
-    let data = ctx.data.read().await;
-    let mut games = get_data::<Running>(&data)?.write().await;
+#[poise::command(slash_command)]
+pub async fn set(
+    ctx: Context<'_>,
+    #[min = 1]
+    #[max = 9]
+    field: usize,
+) -> anyhow::Result<()> {
+    let mut games = ctx.data().ttt_games.write().await;
+    let user = ctx.author();
 
-    let (index, game): (usize, &mut TicTacToe) =
-        match games.iter_mut().enumerate().find(|(_, game)| game.has_player(user.id)) {
-            Some(a) => a,
-            None => return Ok("You're not in a running game!".into()),
-        };
-    let field_number = match options.first().map(|o| &o.value) {
-        Some(ResolvedValue::Integer(x)) => usize::try_from(*x),
-        _ => bail!("Argument `field`: expected Integer, got {:?}", options.first()),
-    }?;
+    let Some((index, game)) =
+        games.iter_mut().enumerate().find(|(_, game)| game.has_player(user.id))
+    else {
+        ctx.reply("You're not in a running game!").await?;
+        return Ok(());
+    };
+    let field_index = field.wrapping_sub(1);
 
     let player = game.player_number(user.id);
-    let res = game.place(player, field_number.wrapping_sub(1));
-    match res {
-        Ok(()) => (),
-        Err(PlaceError::NotYourTurn) => return Ok("It's not your turn!".into()),
-        Err(PlaceError::OutOfBounds) => anyhow::bail!("Field was not in range 1-9"),
-        Err(PlaceError::AlreadyFull) => return Ok(format!("Sorry but no.\n{game:#}").into()),
+    let res = game.place(player, field_index);
+    if let Err(err) = res {
+        ctx.reply(format!("{err}\n{game:#}")).await?;
+        return Ok(());
     }
 
     if let Some(winner) = game.check_all() {
         let game = games.swap_remove(index);
+        drop(games);
         let winner_name = game.player_id(winner).mention();
-        Ok(format!("{winner_name} has won!\nPlaying field: \n{game}").into())
+        ctx.reply(format!("{winner_name} has won!\nPlaying field: \n{game}")).await?;
     } else if game.will_tie() {
         let game = games.swap_remove(index);
-        Ok(format!("It's a tie!\nPlaying field: \n{game}").into())
+        drop(games);
+        ctx.reply(format!("It's a tie!\nPlaying field: \n{game}")).await?;
     } else {
-        Ok(format!("{game:#}").into())
+        ctx.reply(format!("{game:#}")).await?;
     }
+    Ok(())
+}
+#[poise::command(slash_command)]
+pub async fn cancel(ctx: Context<'_>, opponent: Option<serenity::UserId>) -> anyhow::Result<()> {
+    let user = ctx.author().id;
+    // This will be Some(opponent) if the user spefified an opponent, otherwise None.
+    {
+        let mut game_queue = ctx.data().ttt_queue.write().await;
+        if game_queue.contains_key(&user) {
+            game_queue.remove(&user);
+            drop(game_queue);
+            ctx.reply("Cancelled game.").await?;
+            return Ok(());
+        }
+    }
+
+    {
+        let mut running_games = ctx.data().ttt_games.write().await;
+        if let Some(index) = find_game_with_either(&*running_games, user, opponent.as_ref()) {
+            running_games.swap_remove(index);
+            drop(running_games);
+            ctx.reply("You gave up.").await?;
+            return Ok(());
+        }
+    }
+    ctx.reply("There was no game to cancel").await?;
+    Ok(())
 }
 
-pub async fn find_game<'a>(
+fn find_game_with_either<'a>(
+    game_queue: impl IntoIterator<Item = &'a TicTacToe>,
+    user: UserId,
+    opponent: Option<&UserId>,
+) -> Option<usize> {
+    game_queue
+        .into_iter()
+        .enumerate()
+        .find(|(_, game)| {
+            game.has_player(user) && opponent.map_or(true, |opp| game.has_player(*opp))
+        })
+        .map(|(index, _)| index)
+}
+
+pub fn find_game<'a>(
     opponent: &'_ User,
     host: Option<&'a UserId>,
     games: &'a HashMap<UserId, UserId>,
@@ -190,7 +159,7 @@ pub async fn find_game<'a>(
     games.iter().find(|(_, o)| **o == opponent.id).map(|h| h.0)
 }
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TicTacToe {
     field: [Option<Player>; 9],
     pub player_1: UserId,
@@ -199,7 +168,7 @@ pub struct TicTacToe {
 }
 
 impl TicTacToe {
-    pub fn new(player_1: UserId, player_2: UserId) -> Self {
+    pub const fn new(player_1: UserId, player_2: UserId) -> Self {
         Self { field: [None; 9], player_1, player_2, previous_player: None }
     }
 
@@ -217,7 +186,7 @@ impl TicTacToe {
         }
     }
 
-    pub fn player_id(&self, player: Player) -> UserId {
+    pub const fn player_id(&self, player: Player) -> UserId {
         match player {
             Player::One => self.player_1,
             Player::Two => self.player_2,
@@ -270,22 +239,22 @@ impl TicTacToe {
         }
 
         let mut game = self.clone();
-        game.field.iter_mut().for_each(|f| {
+        for f in &mut game.field {
             if f.is_none() {
                 *f = Some(Player::One);
             }
-        });
+        }
 
         if game.check_all().is_some() {
             return false;
         }
 
         game.field = self.field;
-        game.field.iter_mut().for_each(|f| {
+        for f in &mut game.field {
             if f.is_none() {
                 *f = Some(Player::Two);
             }
-        });
+        }
         if game.check_all().is_some() {
             return false;
         }
@@ -323,7 +292,7 @@ impl fmt::Display for TicTacToe {
                 ":one:", ":two:", ":three:", ":four:", ":five:", ":six:", ":seven:", ":eight:",
                 ":nine:",
             ];
-            for (index, (element, nr)) in self.field.iter().zip(NUMBER_FIELD.iter()).enumerate() {
+            for (index, (element, nr)) in self.field.iter().zip(&NUMBER_FIELD).enumerate() {
                 match element {
                     None => write!(f, "{nr}")?,
                     Some(Player::One) => write!(f, ":negative_squared_cross_mark:")?,
@@ -374,18 +343,9 @@ pub enum PlaceError {
 impl fmt::Display for PlaceError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            PlaceError::AlreadyFull => write!(f, "That field was already used!"),
-            PlaceError::OutOfBounds => write!(f, "That's not a valid field!"),
-            PlaceError::NotYourTurn => write!(f, "It's not your turn!"),
+            Self::AlreadyFull => write!(f, "That field was already used!"),
+            Self::OutOfBounds => write!(f, "That's not a valid field!"),
+            Self::NotYourTurn => write!(f, "It's not your turn!"),
         }
     }
-}
-
-pub struct Running;
-impl TypeMapKey for Running {
-    type Value = RwLock<Vec<TicTacToe>>;
-}
-pub struct Queue;
-impl TypeMapKey for Queue {
-    type Value = RwLock<HashMap<UserId, UserId>>;
 }
