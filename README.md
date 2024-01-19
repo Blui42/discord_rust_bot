@@ -4,25 +4,36 @@ This is a simple, general-purpose discord bot written in Rust.
 
 ## Usage 
 
-### Setup
+This bot can be started using `cargo run --release`
+and stopped with the key combination `Ctrl-C`
 
-To use this bot, create a  '.env' file and format it this way:
+## Configuration
 
-```
-DISCORD_TOKEN=yourBotToken
-```
+This Bot is configured via the environment.  
+It will load any environment variables declared in the file `.env`.  
 
-### Starting 
+Current configuration options:
 
-To start this bot, run `cargo run --release` in this project's root folder
+### `DISCORD_TOKEN=yourBotToken`
 
-### Saving 
+The authentication token to use. 
+This Option is required.
+If you don't have a token, set up your Bot on the
+[Discord Developer Portal](https://discord.com/developers/applications/)
 
-This bot will save automatically every 10 Minutes and when stopped.
 
-### Stopping
+### `DISCORD_BOT_OWNERS=1234567890,9876543210`
 
-To stop this bot, press \<Ctrl-C>
+Comma-separated list of IDs of owners to add.
+Owners set on the [Discord Developer Portal](https://discord.com/developers/applications/)
+will be automatically added as well.
+
+
+### `DISCORD_HOME_SERVER=1234567890`
+
+ID of the home server of the bot.
+Commands will be only added to the home server.
+If not specified, the commands will be added globally.
 
 ## Copying
 
