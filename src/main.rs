@@ -2,7 +2,7 @@ mod commands;
 mod data;
 mod utils;
 
-use std::{collections::HashSet, iter::FromIterator};
+use std::{collections::HashSet, iter::FromIterator, sync::Arc};
 
 use anyhow::Context as _;
 use data::{config::Config, Data};
@@ -40,7 +40,7 @@ async fn main() -> anyhow::Result<()> {
     let intents = GatewayIntents::GUILD_MESSAGES;
     let mut client = Client::builder(&token, intents).framework(framework).await?;
 
-    let shard_manager = client.shard_manager.clone();
+    let shard_manager = Arc::clone(&client.shard_manager);
     tokio::spawn(async move {
         tokio::signal::ctrl_c().await.expect("Could not register ctrl+c handler");
         println!("Shutting Down...");
