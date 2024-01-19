@@ -4,7 +4,11 @@ use poise::CreateReply;
 use crate::utils::Context;
 
 /// Delete some messages
-#[poise::command(slash_command)]
+#[poise::command(
+    slash_command,
+    default_member_permissions = "MANAGE_MESSAGES",
+    required_bot_permissions = "MANAGE_MESSAGES"
+)]
 pub async fn delete(
     ctx: Context<'_>,
     #[min = 0]
