@@ -12,6 +12,8 @@ use poise::{
 pub async fn ttt(_: Context<'_>) -> anyhow::Result<()> {
     Ok(())
 }
+
+/// Start a game of Tic-Tac-Toe against another user
 #[poise::command(slash_command)]
 pub async fn start(ctx: Context<'_>, opponent: Option<serenity::User>) -> anyhow::Result<()> {
     let user = ctx.author();
@@ -68,6 +70,7 @@ pub async fn make_request(ctx: Context<'_>, opponent: serenity::User) -> anyhow:
     Ok(())
 }
 
+/// Set a field in the game of Tic-Tac-Toe you're currently in
 #[poise::command(slash_command)]
 pub async fn set(
     ctx: Context<'_>,
@@ -81,7 +84,7 @@ pub async fn set(
     let Some((index, game)) =
         games.iter_mut().enumerate().find(|(_, game)| game.has_player(user.id))
     else {
-        ctx.reply("You're not in a running game!").await?;
+        ctx.reply("You're not in a running game! Use `/ttt start <user>` to start a game!").await?;
         return Ok(());
     };
     let field_index = field.wrapping_sub(1);
@@ -107,6 +110,8 @@ pub async fn set(
     }
     Ok(())
 }
+
+/// Cancel an upcoming or ongoing game of Tic-Tac-Toe
 #[poise::command(slash_command)]
 pub async fn cancel(ctx: Context<'_>, opponent: Option<serenity::UserId>) -> anyhow::Result<()> {
     let user = ctx.author().id;

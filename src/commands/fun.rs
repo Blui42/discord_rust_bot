@@ -16,6 +16,8 @@ fn roll_dice(rolls: u8, sides: u8) -> (u16, u8, u8, Vec<u8>) {
     }
     (total, min, max, summary)
 }
+
+/// Roll the dice
 #[poise::command(slash_command)]
 pub async fn roll(ctx: crate::utils::Context<'_>, rolls: u8, sides: u8) -> anyhow::Result<()> {
     if rolls == 0 {
@@ -30,6 +32,8 @@ pub async fn roll(ctx: crate::utils::Context<'_>, rolls: u8, sides: u8) -> anyho
     }
     Ok(())
 }
+
+/// Flip a coin
 #[poise::command(slash_command)]
 pub async fn coin(ctx: crate::utils::Context<'_>) -> anyhow::Result<()> {
     ctx.say(flip_coin()).await?;

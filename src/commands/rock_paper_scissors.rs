@@ -3,6 +3,7 @@ use std::str::FromStr;
 use poise::serenity_prelude::User;
 use tokio::time::Instant;
 
+/// Play Rock-Paper-Scissors against another user
 #[poise::command(slash_command, rename = "rockpaperscissors")]
 pub async fn rock_paper_scissors(
     ctx: crate::utils::Context<'_>,

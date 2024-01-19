@@ -3,6 +3,7 @@ use poise::CreateReply;
 
 use crate::utils::Context;
 
+/// Delete some messages
 #[poise::command(slash_command)]
 pub async fn delete(
     ctx: Context<'_>,
